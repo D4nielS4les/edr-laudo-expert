@@ -3,8 +3,8 @@ import autoTable from "jspdf-autotable";
 import type { LaudoPericial } from "@/types/laudo";
 
 
-const NAVY = [27, 42, 74] as const;    // #1B2A4A
-const BLUE = [51, 102, 153] as const;  // accent
+const NAVY: [number, number, number] = [27, 42, 74];    // #1B2A4A
+const BLUE: [number, number, number] = [51, 102, 153];  // accent
 const WHITE = [255, 255, 255] as const;
 const GRAY = [100, 100, 100] as const;
 const LIGHT_BG = [240, 243, 248] as const;
