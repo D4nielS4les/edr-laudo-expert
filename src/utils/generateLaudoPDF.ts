@@ -191,7 +191,7 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
 
   y = sectionTitle(doc, "Informações Gerais do Processo", y);
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     margin: { left: MARGIN, right: MARGIN },
     head: [["Analista", "Vistoriador", "Resp. Técnico"]],
@@ -206,7 +206,7 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
     bodyStyles: { fontSize: 9 },
     theme: "grid",
   });
-  y = doc.lastAutoTable.finalY + 10;
+  y = (doc as any).lastAutoTable.finalY + 10;
 
   y = sectionTitle(doc, "Objetivo de Perícia", y);
   doc.setFontSize(10);
@@ -241,7 +241,7 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
   y = addWrappedText(doc, oficinaText, MARGIN, y, CONTENT_W);
   y += 4;
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     margin: { left: MARGIN, right: MARGIN },
     head: [["Dado", "Valor"]],
@@ -257,11 +257,11 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
     theme: "grid",
     columnStyles: { 0: { fontStyle: "bold", cellWidth: 50 } },
   });
-  y = doc.lastAutoTable.finalY + 10;
+  y = (doc as any).lastAutoTable.finalY + 10;
 
   // Oficina info table
   y = sectionTitle(doc, "Dados da Oficina", y);
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     margin: { left: MARGIN, right: MARGIN },
     head: [["Dado", "Valor"]],
@@ -336,7 +336,7 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
       item.status === "aprovado" ? "Aprovado" : item.status === "reprovado" ? "Reprovado" : "Pendente",
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: y,
       margin: { left: MARGIN, right: MARGIN },
       head: [["#", "Cód.", "Descrição", "Qtd P.", "Vlr Peça", "Qtd MO", "Vlr MO", "Total", "Status"]],
@@ -350,7 +350,7 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
         8: { cellWidth: 18 },
       },
     });
-    y = doc.lastAutoTable.finalY + 6;
+    y = (doc as any).lastAutoTable.finalY + 6;
 
     // Totals
     const subtotalPecas = laudo.analise.itensOrcamento.reduce((s, i) => s + i.qtdPeca * i.valorPeca, 0);
