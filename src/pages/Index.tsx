@@ -26,12 +26,17 @@ const tabs = [
 function LaudoApp() {
   const [activeTab, setActiveTab] = useState("home");
   const { toast } = useToast();
+  const { laudo } = useLaudo();
 
-  const handleExportPDF = () => {
-    toast({
-      title: "Gerando PDF...",
-      description: "O laudo está sendo compilado para exportação.",
-    });
+  const handleExportPDF = async () => {
+    toast({ title: "Gerando PDF...", description: "O laudo está sendo compilado para exportação." });
+    try {
+      await generateLaudoPDF(laudo);
+      toast({ title: "PDF gerado com sucesso!", description: "O download foi iniciado automaticamente." });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Erro ao gerar PDF", description: "Verifique os dados e tente novamente.", variant: "destructive" });
+    }
   };
 
   return (
