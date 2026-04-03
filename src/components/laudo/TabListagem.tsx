@@ -1,13 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, FileSearch, Plus } from "lucide-react";
+import { Edit, Trash2, FileSearch, Plus, FileDown } from "lucide-react";
 import { useLaudo } from "@/contexts/LaudoContext";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { generateLaudoPDF } from "@/utils/generateLaudoPDF";
+import { useToast } from "@/hooks/use-toast";
 
 export function TabListagem() {
   const { listaLaudos, carregarLaudo, excluirLaudo, novoLaudo } = useLaudo();
+  const { toast } = useToast();
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "—";
@@ -17,6 +20,17 @@ export function TabListagem() {
 
   const formatCurrency = (val: number) => {
     return val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  };
+
+  const handleDownloadPDF = async (laudo: any) => {
+    toast({ title: "Gerando PDF...", description: `Preparando o laudo da placa ${laudo.dadosVeiculo.placa || 'S/ Placa'}.` });
+    try {
+      await generateLaudoPDF(laudo);
+      toast({ title: "Sucesso!", description: "O download do laudo foi iniciado." });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Erro ao gerar PDF", description: "Não foi possível gerar o arquivo.", variant: "destructive" });
+    }
   };
 
   return (
@@ -89,6 +103,9 @@ export function TabListagem() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => handleDownloadPDF(l)} title="Baixar PDF">
+                            <FileDown className="h-4 w-4 text-primary" />
+                          </Button>
                           <Button variant="ghost" size="icon" onClick={() => carregarLaudo(l.id)} title="Editar/Consultar">
                             <Edit className="h-4 w-4 text-accent" />
                           </Button>
