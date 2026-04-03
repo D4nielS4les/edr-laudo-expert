@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Home, Users, Wrench, Camera, BarChart3, FileCheck, FileDown, List, Save } from "lucide-react";
+import { Home, Users, Wrench, Camera, BarChart3, FileCheck, FileDown, List, Save, CheckCircle2, Clock } from "lucide-react";
 import { LaudoProvider } from "@/contexts/LaudoContext";
 import { PageHeader } from "@/components/laudo/PageHeader";
 import { TabHome } from "@/components/laudo/TabHome";
@@ -16,7 +16,8 @@ import { generateLaudoPDF } from "@/utils/generateLaudoPDF";
 
 const tabs = [
   { value: "home", label: "Início", icon: Home },
-  { value: "listagem", label: "Vistorias", icon: List },
+  { value: "pendentes", label: "Pendentes", icon: Clock },
+  { value: "finalizadas", label: "Finalizadas", icon: CheckCircle2 },
   { value: "cliente", label: "Cliente / Veículo", icon: Users },
   { value: "oficina", label: "Oficina", icon: Wrench },
   { value: "fotos", label: "Vistoria e Fotos", icon: Camera },
@@ -70,7 +71,8 @@ function LaudoApp() {
           </div>
 
           <TabsContent value="home"><TabHome /></TabsContent>
-          <TabsContent value="listagem"><TabListagem /></TabsContent>
+          <TabsContent value="pendentes"><TabListagem statusFilter="pendente" /></TabsContent>
+          <TabsContent value="finalizadas"><TabListagem statusFilter="finalizado" /></TabsContent>
           <TabsContent value="cliente"><TabClienteVeiculo /></TabsContent>
           <TabsContent value="oficina"><TabOficina /></TabsContent>
           <TabsContent value="fotos"><TabFotos /></TabsContent>

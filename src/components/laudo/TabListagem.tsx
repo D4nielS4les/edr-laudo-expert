@@ -1,16 +1,22 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, FileSearch, Plus, FileDown } from "lucide-react";
+import { Edit, Trash2, FileSearch, Plus, FileDown, Clock, CheckCircle2 } from "lucide-react";
 import { useLaudo } from "@/contexts/LaudoContext";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { generateLaudoPDF } from "@/utils/generateLaudoPDF";
 import { useToast } from "@/hooks/use-toast";
 
-export function TabListagem() {
+interface TabListagemProps {
+  statusFilter: 'pendente' | 'finalizado';
+}
+
+export function TabListagem({ statusFilter }: TabListagemProps) {
   const { listaLaudos, carregarLaudo, excluirLaudo, novoLaudo } = useLaudo();
   const { toast } = useToast();
+
+  const laudosFiltrados = listaLaudos.filter(l => (l.status || 'pendente') === statusFilter);
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "—";
@@ -37,17 +43,29 @@ export function TabListagem() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-foreground">Vistorias Realizadas</h2>
-          <p className="text-sm text-muted-foreground">Gerencie e consulte todos os laudos salvos no sistema.</p>
+          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+            {statusFilter === 'pendente' ? (
+              <><Clock className="h-5 w-5 text-amber-500" /> Vistorias Pendentes</>
+            ) : (
+              <><CheckCircle2 className="h-5 w-5 text-emerald-500" /> Vistorias Finalizadas</>
+            )}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {statusFilter === 'pendente' 
+              ? "Vistorias em processo de análise ou aguardando conclusão." 
+              : "Histórico de vistorias concluídas e laudos emitidos."}
+          </p>
         </div>
-        <Button onClick={novoLaudo} className="gap-2">
-          <Plus className="h-4 w-4" /> Nova Vistoria
-        </Button>
+        {statusFilter === 'pendente' && (
+          <Button onClick={novoLaudo} className="gap-2">
+            <Plus className="h-4 w-4" /> Nova Vistoria
+          </Button>
+        )}
       </div>
 
       <Card>
         <CardContent className="p-0">
-          {listaLaudos.length > 0 ? (
+          {laudosFiltrados.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -61,7 +79,7 @@ export function TabListagem() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {listaLaudos.map((l) => {
+                {laudosFiltrados.map((l) => {
                   const itens = l.analise.itensOrcamento;
                   const valorAprovado = itens
                     .filter(i => i.status === "aprovado")
@@ -122,8 +140,10 @@ export function TabListagem() {
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <FileSearch className="h-12 w-12 mb-2 opacity-20" />
-              <p>Nenhuma vistoria encontrada</p>
-              <Button variant="link" onClick={novoLaudo} className="mt-2">Começar nova vistoria</Button>
+              <p>Nenhuma vistoria {statusFilter === 'pendente' ? 'pendente' : 'finalizada'} encontrada</p>
+              {statusFilter === 'pendente' && (
+                <Button variant="link" onClick={novoLaudo} className="mt-2">Começar nova vistoria</Button>
+              )}
             </div>
           )}
         </CardContent>

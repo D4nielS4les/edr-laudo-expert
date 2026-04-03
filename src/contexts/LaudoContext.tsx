@@ -3,6 +3,7 @@ import type { LaudoPericial } from "@/types/laudo";
 
 const createEmptyLaudo = (): LaudoPericial => ({
   id: crypto.randomUUID(),
+  status: 'pendente',
   dadosCliente: { solicitante: "", empresa: "", clienteFinal: "" },
   dadosVeiculo: { marcaModelo: "", anoFabricacao: "", anoModelo: "", placa: "", chassi: "", hodometro: "" },
   dadosOficina: { nome: "", endereco: "", bairro: "", cidade: "", telefone: "", responsavel: "", cnpj: "" },
@@ -27,6 +28,7 @@ interface LaudoContextType {
   updateAnalise: (updates: Partial<LaudoPericial["analise"]>) => void;
   updateConclusao: (updates: Partial<LaudoPericial["conclusao"]>) => void;
   salvarLaudoAtual: () => void;
+  finalizarLaudoAtual: () => void;
   carregarLaudo: (id: string) => void;
   excluirLaudo: (id: string) => void;
   novoLaudo: () => void;
@@ -39,7 +41,6 @@ export function LaudoProvider({ children }: { children: ReactNode }) {
   const [listaLaudos, setListaLaudos] = useState<LaudoPericial[]>([]);
   const [activeTab, setActiveTab] = useState("home");
 
-  // Carregar lista do localStorage ao iniciar
   useEffect(() => {
     const saved = localStorage.getItem("edr_laudos_lista");
     if (saved) {
@@ -51,7 +52,6 @@ export function LaudoProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Salvar lista no localStorage sempre que mudar
   useEffect(() => {
     localStorage.setItem("edr_laudos_lista", JSON.stringify(listaLaudos));
   }, [listaLaudos]);
@@ -89,6 +89,21 @@ export function LaudoProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const finalizarLaudoAtual = () => {
+    const laudoFinalizado: LaudoPericial = { ...laudo, status: 'finalizado' };
+    setLaudo(laudoFinalizado);
+    setListaLaudos((prev) => {
+      const index = prev.findIndex((l) => l.id === laudo.id);
+      if (index >= 0) {
+        const novaLista = [...prev];
+        novaLista[index] = laudoFinalizado;
+        return novaLista;
+      }
+      return [laudoFinalizado, ...prev];
+    });
+    setActiveTab("finalizadas");
+  };
+
   const carregarLaudo = (id: string) => {
     const encontrado = listaLaudos.find((l) => l.id === id);
     if (encontrado) {
@@ -113,7 +128,7 @@ export function LaudoProvider({ children }: { children: ReactNode }) {
     <LaudoContext.Provider value={{ 
       laudo, listaLaudos, activeTab, setActiveTab,
       updateLaudo, updateCliente, updateVeiculo, updateOficina, updateProcesso, updateAnalise, updateConclusao,
-      salvarLaudoAtual, carregarLaudo, excluirLaudo, novoLaudo
+      salvarLaudoAtual, finalizarLaudoAtual, carregarLaudo, excluirLaudo, novoLaudo
     }}>
       {children}
     </LaudoContext.Provider>

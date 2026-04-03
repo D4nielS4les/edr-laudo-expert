@@ -67,6 +67,7 @@ export interface DadosProcesso {
 
 export interface LaudoPericial {
   id: string;
+  status: 'pendente' | 'finalizado';
   dadosCliente: DadosCliente;
   dadosVeiculo: DadosVeiculo;
   dadosOficina: DadosOficina;

@@ -2,10 +2,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { CheckCircle2 } from "lucide-react";
 import { useLaudo } from "@/contexts/LaudoContext";
+import { useToast } from "@/hooks/use-toast";
 
 export function TabConclusao() {
-  const { laudo, updateConclusao } = useLaudo();
+  const { laudo, updateConclusao, finalizarLaudoAtual } = useLaudo();
+  const { toast } = useToast();
+
+  const handleFinalizar = () => {
+    finalizarLaudoAtual();
+    toast({ 
+      title: "Laudo Finalizado!", 
+      description: "A vistoria foi movida para a aba de Finalizadas.",
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -54,6 +66,14 @@ export function TabConclusao() {
           </div>
         </CardContent>
       </Card>
+
+      {laudo.status !== 'finalizado' && (
+        <div className="flex justify-end">
+          <Button onClick={handleFinalizar} className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white">
+            <CheckCircle2 className="h-4 w-4" /> Finalizar Laudo
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
