@@ -2,13 +2,6 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { LaudoPericial } from "@/types/laudo";
 
-// Extend jsPDF type for autotable
-declare module "jspdf" {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-    lastAutoTable: { finalY: number };
-  }
-}
 
 const NAVY = [27, 42, 74] as const;    // #1B2A4A
 const BLUE = [51, 102, 153] as const;  // accent
