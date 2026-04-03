@@ -1,30 +1,29 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ClipboardCheck, TrendingUp, DollarSign, AlertTriangle, PieChart as PieIcon, BarChart3 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { useLaudo } from "@/contexts/LaudoContext";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  AreaChart, Area, PieChart, Pie, Cell, Legend 
+  PieChart, Pie, Cell, Legend 
 } from "recharts";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Truck, Clock, DollarSign, Wrench, AlertCircle } from "lucide-react";
 
 export function TabHome() {
   const { listaLaudos } = useLaudo();
   
-  // Processamento de dados para os gráficos
+  // Processamento de dados
   const processData = () => {
     const groups: Record<string, any> = {};
     const sortedLaudos = [...listaLaudos].sort((a, b) => a.dataLaudo.localeCompare(b.dataLaudo));
 
     sortedLaudos.forEach(l => {
       const date = l.dataLaudo || new Date().toISOString().split('T')[0];
-      const month = format(parseISO(date), "MMM/yy", { locale: ptBR });
+      const month = format(parseISO(date), "dd MMM", { locale: ptBR });
       
       if (!groups[month]) {
-        groups[month] = { month, total: 0, aprovado: 0, glosa: 0, qtd: 0 };
+        groups[month] = { month, aprovado: 0, glosa: 0, qtd: 0 };
       }
       
-      const vlrTotal = l.analise.itensOrcamento.reduce((s, i) => s + i.valorTotal, 0);
       const vlrAprovado = l.analise.itensOrcamento
         .filter(i => i.status === "aprovado")
         .reduce((s, i) => s + i.valorTotal, 0);
@@ -32,13 +31,12 @@ export function TabHome() {
         .filter(i => i.status === "reprovado")
         .reduce((s, i) => s + i.valorTotal, 0);
         
-      groups[month].total += vlrTotal;
       groups[month].aprovado += vlrAprovado;
       groups[month].glosa += vlrGlosa;
       groups[month].qtd += 1;
     });
 
-    return Object.values(groups);
+    return Object.values(groups).slice(-4); // Últimos 4 períodos
   };
 
   const chartData = processData();
@@ -52,135 +50,211 @@ export function TabHome() {
   const totalGeralGlosa = listaLaudos.reduce((acc, l) => 
     acc + l.analise.itensOrcamento.filter(i => i.status === "reprovado").reduce((s, i) => s + i.valorTotal, 0), 0);
 
-  const taxaGlosa = totalGeralAnalisado > 0 ? (totalGeralGlosa / totalGeralAnalisado) * 100 : 0;
+  const taxaAprovacao = totalGeralAnalisado > 0 ? (totalGeralAprovado / totalGeralAnalisado) * 100 : 0;
 
-  const distributionData = [
-    { name: "Aprovado", value: totalGeralAprovado, color: "#10b981" },
-    { name: "Glosa", value: totalGeralGlosa, color: "#ef4444" },
-  ];
-
-  const stats = [
-    { label: "Total Analisado", value: totalGeralAnalisado, icon: DollarSign, color: "text-blue-600", bg: "bg-blue-50" },
-    { label: "Total Aprovado", value: totalGeralAprovado, icon: ClipboardCheck, color: "text-emerald-600", bg: "bg-emerald-50" },
-    { label: "Total Glosado", value: totalGeralGlosa, icon: AlertTriangle, color: "text-rose-600", bg: "bg-rose-50" },
-    { label: "Taxa de Glosa", value: `${taxaGlosa.toFixed(1)}%`, icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50" },
+  const donutData = [
+    { name: "Aprovado", value: totalGeralAprovado },
+    { name: "Restante", value: totalGeralAnalisado - totalGeralAprovado },
   ];
 
   const formatCurrency = (val: number) => 
     val.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground tracking-tight">Dashboard de Performance</h2>
-          <p className="text-sm text-muted-foreground">Indicadores estratégicos de vistorias e economia gerada.</p>
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden rounded-xl border border-border shadow-2xl bg-[#e0e6ed]">
+      
+      {/* Lado Esquerdo - Status (Navy) */}
+      <div className="lg:col-span-3 bg-[#2d4a6d] p-8 text-white flex flex-col items-center">
+        <div className="mb-8">
+          <Truck className="h-20 w-20 text-[#4db6ac]" />
         </div>
-        <div className="bg-muted/50 px-4 py-2 rounded-full text-xs font-medium text-muted-foreground border border-border">
-          Total de {listaLaudos.length} vistorias processadas
+        <h3 className="text-xl font-bold uppercase tracking-widest mb-6">Status Vistorias</h3>
+        
+        <div className="w-full space-y-4 mb-12">
+          <div className="flex justify-between text-sm">
+            <span className="opacity-80">Total Analisado</span>
+            <span className="font-bold">{listaLaudos.length}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="opacity-80">Com Glosa</span>
+            <span className="font-bold text-[#4db6ac]">{listaLaudos.filter(l => l.analise.itensOrcamento.some(i => i.status === 'reprovado')).length}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="opacity-80">Pendentes</span>
+            <span className="font-bold">00</span>
+          </div>
         </div>
-      </div>
 
-      {/* Indicadores Principais */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((s) => (
-          <Card key={s.label} className="border-none shadow-sm bg-card">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <div className={`p-2 rounded-lg ${s.bg} ${s.color}`}>
-                  <s.icon className="h-5 w-5" />
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">KPI</span>
-              </div>
-              <p className="text-sm font-medium text-muted-foreground">{s.label}</p>
-              <p className={`text-2xl font-bold tracking-tight ${s.color}`}>
-                {typeof s.value === 'number' ? formatCurrency(s.value) : s.value}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Gráfico de Distribuição (Donut) */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <PieIcon className="h-4 w-4 text-muted-foreground" /> Distribuição de Valores
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px] flex flex-col items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={distributionData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {distributionData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                <Legend verticalAlign="bottom" height={36}/>
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="text-center mt-2">
-              <p className="text-xs text-muted-foreground">Economia Gerada (Glosa)</p>
-              <p className="text-lg font-bold text-rose-600">{formatCurrency(totalGeralGlosa)}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Gráfico de Evolução Mensal */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-muted-foreground" /> Evolução Financeira Mensal
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="colorAprovado" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} dy={10} />
-                <YAxis fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `R$ ${v/1000}k`} />
-                <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                <Area type="monotone" dataKey="aprovado" name="Aprovado" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorAprovado)" />
-                <Area type="monotone" dataKey="glosa" name="Glosa" stroke="#ef4444" strokeWidth={2} fill="transparent" strokeDasharray="5 5" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Volume de Vistorias */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Volume de Vistorias por Período</CardTitle>
-        </CardHeader>
-        <CardContent className="h-[200px]">
+        <div className="relative w-full aspect-square flex items-center justify-center">
+          <div className="absolute text-center">
+            <span className="text-4xl font-bold text-[#4db6ac]">{taxaAprovacao.toFixed(0)}%</span>
+            <p className="text-[10px] uppercase opacity-60">Taxa de Aprovação</p>
+          </div>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} />
-              <YAxis fontSize={11} tickLine={false} axisLine={false} />
-              <Tooltip />
-              <Bar dataKey="qtd" name="Qtd. Vistorias" fill="#1e293b" radius={[4, 4, 0, 0]} barSize={40} />
-            </BarChart>
+            <PieChart>
+              <Pie
+                data={donutData}
+                innerRadius="70%"
+                outerRadius="90%"
+                paddingAngle={0}
+                dataKey="value"
+                startAngle={90}
+                endAngle={450}
+              >
+                <Cell fill="#4db6ac" />
+                <Cell fill="rgba(255,255,255,0.1)" />
+              </Pie>
+            </PieChart>
           </ResponsiveContainer>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
+      {/* Lado Direito - Gráficos e KPIs */}
+      <div className="lg:col-span-9 flex flex-col">
+        
+        {/* Topo - Análise de Carga (Light) */}
+        <div className="p-8 flex-1">
+          <div className="flex justify-between items-start mb-8">
+            <div>
+              <h3 className="text-[#2d4a6d] font-bold uppercase tracking-tight text-lg">Análise de Valores</h3>
+              <p className="text-xs text-muted-foreground">(período x valor)</p>
+            </div>
+            <div className="bg-[#2d4a6d] text-white px-4 py-2 rounded flex items-center gap-2 text-xs">
+              <Clock className="h-3 w-3" />
+              <span>ÚLTIMA ATUALIZAÇÃO: {format(new Date(), "HH:mm:ss")}</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-12 gap-4 h-[300px]">
+            <div className="col-span-10">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#cfd8dc" />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} fontSize={10} dy={10} />
+                  <YAxis hide />
+                  <Tooltip cursor={{fill: 'rgba(0,0,0,0.05)'}} />
+                  <Bar dataKey="aprovado" name="Aprovado" fill="#2d4a6d" barSize={40} />
+                  <Bar dataKey="glosa" name="Glosa" fill="#4db6ac" barSize={40} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="col-span-2 flex flex-col justify-end pb-8">
+              <div className="h-full w-12 bg-[#cfd8dc] relative rounded-sm overflow-hidden self-center">
+                <div 
+                  className="absolute bottom-0 w-full bg-[#2d4a6d]" 
+                  style={{ height: `${taxaAprovacao}%` }}
+                />
+                <div 
+                  className="absolute bottom-0 w-full bg-[#4db6ac] opacity-80" 
+                  style={{ height: `${(totalGeralGlosa / totalGeralAnalisado) * 100}%` }}
+                />
+              </div>
+              <p className="text-[10px] font-bold text-center mt-2 uppercase text-[#2d4a6d]">Total</p>
+            </div>
+          </div>
+
+          <div className="flex gap-6 mt-4 text-[10px] font-bold uppercase text-[#2d4a6d]">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-[#2d4a6d]" /> Valores Aprovados
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-[#4db6ac]" /> Valores Glosados
+            </div>
+          </div>
+        </div>
+
+        {/* Rodapé - Indicadores Grandes (Navy) */}
+        <div className="bg-[#2d4a6d] p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 text-white">
+          <div className="lg:col-span-9 grid grid-cols-1 md:grid-cols-2 gap-12">
+            {/* Seção Custo */}
+            <div className="space-y-6">
+              <h4 className="text-xs font-bold uppercase tracking-widest opacity-80">Valores Financeiros</h4>
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-1 bg-[#4db6ac]" />
+                <div>
+                  <p className="text-[10px] uppercase opacity-60">Média por Laudo</p>
+                  <p className="text-3xl font-light tracking-tighter">
+                    <span className="text-sm opacity-60 mr-1">R$</span>
+                    {(totalGeralAnalisado / (listaLaudos.length || 1)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-[2px] bg-[#4db6ac] opacity-40" />
+                  <div>
+                    <p className="text-[8px] uppercase opacity-60">Total Aprovado</p>
+                    <p className="text-lg font-medium">{formatCurrency(totalGeralAprovado)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-[2px] bg-[#4db6ac] opacity-40" />
+                  <div>
+                    <p className="text-[8px] uppercase opacity-60">Total Glosa</p>
+                    <p className="text-lg font-medium">{formatCurrency(totalGeralGlosa)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Seção Itens */}
+            <div className="space-y-6">
+              <h4 className="text-xs font-bold uppercase tracking-widest opacity-80">Volume de Itens</h4>
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-1 bg-[#4db6ac]" />
+                <div>
+                  <p className="text-[10px] uppercase opacity-60">Média de Itens / Laudo</p>
+                  <p className="text-3xl font-light tracking-tighter">
+                    { (listaLaudos.reduce((acc, l) => acc + l.analise.itensOrcamento.length, 0) / (listaLaudos.length || 1)).toFixed(1) }
+                    <span className="text-sm opacity-60 ml-1">itens</span>
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-[2px] bg-[#4db6ac] opacity-40" />
+                  <div>
+                    <p className="text-[8px] uppercase opacity-60">Total Peças</p>
+                    <p className="text-lg font-medium">{listaLaudos.reduce((acc, l) => acc + l.analise.itensOrcamento.reduce((s, i) => s + i.qtdPeca, 0), 0)}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-[2px] bg-[#4db6ac] opacity-40" />
+                  <div>
+                    <p className="text-[8px] uppercase opacity-60">Total M.O.</p>
+                    <p className="text-lg font-medium">{listaLaudos.reduce((acc, l) => acc + l.analise.itensOrcamento.reduce((s, i) => s + i.qtdMaoObra, 0), 0)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Resumo Lateral Direita */}
+          <div className="lg:col-span-3 border-l border-white/10 pl-8 flex flex-col justify-center">
+            <h4 className="text-xs font-bold uppercase tracking-widest opacity-80 mb-4 text-center">Resumo Geral</h4>
+            <div className="flex flex-col items-center mb-6">
+              <Truck className="h-10 w-10 text-[#4db6ac] mb-2" />
+              <p className="text-xs uppercase opacity-60">Total Vistorias</p>
+              <p className="text-4xl font-bold">{listaLaudos.length.toString().padStart(2, '0')}</p>
+            </div>
+            <div className="space-y-3 text-[10px] uppercase font-bold">
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#4db6ac]" /> Aprovadas</span>
+                <span>{listaLaudos.filter(l => l.analise.itensOrcamento.every(i => i.status === 'aprovado')).length.toString().padStart(2, '0')}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-2"><Wrench className="h-3 w-3 text-orange-400" /> Em Análise</span>
+                <span>00</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-2"><AlertCircle className="h-3 w-3 text-red-400" /> Com Glosa</span>
+                <span>{listaLaudos.filter(l => l.analise.itensOrcamento.some(i => i.status === 'reprovado')).length.toString().padStart(2, '0')}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }
