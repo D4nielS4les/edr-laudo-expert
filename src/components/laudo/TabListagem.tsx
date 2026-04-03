@@ -13,7 +13,7 @@ interface TabListagemProps {
 }
 
 export function TabListagem({ statusFilter }: TabListagemProps) {
-  const { listaLaudos, carregarLaudo, excluirLaudo, novoLaudo } = useLaudo();
+  const { listaLaudos, carregarLaudo, excluirLaudo, novoLaudo, finalizarLaudo } = useLaudo();
   const { toast } = useToast();
 
   const laudosFiltrados = listaLaudos.filter(l => (l.status || 'pendente') === statusFilter);
@@ -37,6 +37,14 @@ export function TabListagem({ statusFilter }: TabListagemProps) {
       console.error(err);
       toast({ title: "Erro ao gerar PDF", description: "Não foi possível gerar o arquivo.", variant: "destructive" });
     }
+  };
+
+  const handleFinalizar = (id: string, placa: string) => {
+    finalizarLaudo(id);
+    toast({ 
+      title: "Vistoria Finalizada!", 
+      description: `A vistoria da placa ${placa || 'S/ Placa'} foi movida para finalizadas.`,
+    });
   };
 
   return (
@@ -121,6 +129,16 @@ export function TabListagem({ statusFilter }: TabListagemProps) {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          {statusFilter === 'pendente' && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleFinalizar(l.id, l.dadosVeiculo.placa)} 
+                              title="Finalizar Vistoria"
+                            >
+                              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                            </Button>
+                          )}
                           <Button variant="ghost" size="icon" onClick={() => handleDownloadPDF(l)} title="Baixar PDF">
                             <FileDown className="h-4 w-4 text-primary" />
                           </Button>

@@ -29,6 +29,7 @@ interface LaudoContextType {
   updateConclusao: (updates: Partial<LaudoPericial["conclusao"]>) => void;
   salvarLaudoAtual: () => void;
   finalizarLaudoAtual: () => void;
+  finalizarLaudo: (id: string) => void;
   carregarLaudo: (id: string) => void;
   excluirLaudo: (id: string) => void;
   novoLaudo: () => void;
@@ -104,6 +105,13 @@ export function LaudoProvider({ children }: { children: ReactNode }) {
     setActiveTab("finalizadas");
   };
 
+  const finalizarLaudo = (id: string) => {
+    setListaLaudos((prev) => prev.map(l => l.id === id ? { ...l, status: 'finalizado' } : l));
+    if (laudo.id === id) {
+      setLaudo(prev => ({ ...prev, status: 'finalizado' }));
+    }
+  };
+
   const carregarLaudo = (id: string) => {
     const encontrado = listaLaudos.find((l) => l.id === id);
     if (encontrado) {
@@ -128,7 +136,7 @@ export function LaudoProvider({ children }: { children: ReactNode }) {
     <LaudoContext.Provider value={{ 
       laudo, listaLaudos, activeTab, setActiveTab,
       updateLaudo, updateCliente, updateVeiculo, updateOficina, updateProcesso, updateAnalise, updateConclusao,
-      salvarLaudoAtual, finalizarLaudoAtual, carregarLaudo, excluirLaudo, novoLaudo
+      salvarLaudoAtual, finalizarLaudoAtual, finalizarLaudo, carregarLaudo, excluirLaudo, novoLaudo
     }}>
       {children}
     </LaudoContext.Provider>
