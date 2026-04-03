@@ -9,6 +9,7 @@ import { useLaudo } from "@/contexts/LaudoContext";
 import type { ItemOrcamento } from "@/types/laudo";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 export function TabAnalise() {
   const { laudo, updateAnalise } = useLaudo();
@@ -88,7 +89,14 @@ export function TabAnalise() {
                       <span className="text-sm font-medium truncate max-w-[200px] sm:max-w-md">
                         {item.descricao || "Sem descrição"}
                       </span>
-                      <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                      <span className={cn(
+                        "text-xs font-semibold px-2 py-0.5 rounded border transition-colors",
+                        item.status === 'reprovado' 
+                          ? "text-destructive bg-destructive/10 border-destructive/20" 
+                          : item.status === 'aprovado'
+                            ? "text-emerald-600 bg-emerald-50 border-emerald-100"
+                            : "text-amber-600 bg-amber-50 border-amber-100"
+                      )}>
                         R$ {item.valorTotal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                       </span>
                     </div>
