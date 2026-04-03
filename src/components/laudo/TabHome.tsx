@@ -6,15 +6,18 @@ import {
 } from "recharts";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Truck, Clock, DollarSign, Wrench, AlertCircle } from "lucide-react";
+import { Truck, Clock, DollarSign, Wrench, AlertCircle, FileSearch } from "lucide-react";
 
 export function TabHome() {
   const { listaLaudos } = useLaudo();
   
-  // Processamento de dados
+  // Filtra apenas os laudos finalizados para o dashboard
+  const laudosFinalizados = listaLaudos.filter(l => l.status === 'finalizado');
+  
+  // Processamento de dados para o gráfico de barras
   const processData = () => {
     const groups: Record<string, any> = {};
-    const sortedLaudos = [...listaLaudos].sort((a, b) => a.dataLaudo.localeCompare(b.dataLaudo));
+    const sortedLaudos = [...laudosFinalizados].sort((a, b) => a.dataLaudo.localeCompare(b.dataLaudo));
 
     sortedLaudos.forEach(l => {
       const date = l.dataLaudo || new Date().toISOString().split('T')[0];
@@ -41,13 +44,13 @@ export function TabHome() {
 
   const chartData = processData();
   
-  const totalGeralAnalisado = listaLaudos.reduce((acc, l) => 
+  const totalGeralAnalisado = laudosFinalizados.reduce((acc, l) => 
     acc + l.analise.itensOrcamento.reduce((s, i) => s + i.valorTotal, 0), 0);
   
-  const totalGeralAprovado = listaLaudos.reduce((acc, l) => 
+  const totalGeralAprovado = laudosFinalizados.reduce((acc, l) => 
     acc + l.analise.itensOrcamento.filter(i => i.status === "aprovado").reduce((s, i) => s + i.valorTotal, 0), 0);
     
-  const totalGeralGlosa = listaLaudos.reduce((acc, l) => 
+  const totalGeralGlosa = laudosFinalizados.reduce((acc, l) => 
     acc + l.analise.itensOrcamento.filter(i => i.status === "reprovado").reduce((s, i) => s + i.valorTotal, 0), 0);
 
   const taxaAprovacao = totalGeralAnalisado > 0 ? (totalGeralAprovado / totalGeralAnalisado) * 100 : 0;
@@ -59,6 +62,19 @@ export function TabHome() {
 
   const formatCurrency = (val: number) => 
     val.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+
+  // Se não houver laudos finalizados, exibe um estado vazio amigável
+  if (laudosFinalizados.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 bg-muted/30 rounded-xl border-2 border-dashed border-border">
+        <FileSearch className="h-16 w-16 text-muted-foreground/30 mb-4" />
+        <h3 className="text-xl font-semibold text-muted-foreground">Dashboard Vazio</h3>
+        <p className="text-sm text-muted-foreground max-w-xs text-center mt-2">
+          Finalize vistorias na aba de Pendentes para visualizar as métricas e gráficos de desempenho aqui.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden rounded-xl border border-border shadow-2xl bg-[#e0e6ed]">
@@ -72,16 +88,16 @@ export function TabHome() {
         
         <div className="w-full space-y-4 mb-12">
           <div className="flex justify-between text-sm">
-            <span className="opacity-80">Total Analisado</span>
-            <span className="font-bold">{listaLaudos.length}</span>
+            <span className="opacity-80">Total Finalizado</span>
+            <span className="font-bold">{laudosFinalizados.length}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="opacity-80">Com Glosa</span>
-            <span className="font-bold text-[#4db6ac]">{listaLaudos.filter(l => l.analise.itensOrcamento.some(i => i.status === 'reprovado')).length}</span>
+            <span className="font-bold text-[#4db6ac]">{laudosFinalizados.filter(l => l.analise.itensOrcamento.some(i => i.status === 'reprovado')).length}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="opacity-80">Pendentes</span>
-            <span className="font-bold">00</span>
+            <span className="font-bold">{listaLaudos.filter(l => l.status === 'pendente').length.toString().padStart(2, '0')}</span>
           </div>
         </div>
 
@@ -116,7 +132,7 @@ export function TabHome() {
         <div className="p-8 flex-1">
           <div className="flex justify-between items-start mb-8">
             <div>
-              <h3 className="text-[#2d4a6d] font-bold uppercase tracking-tight text-lg">Análise de Valores</h3>
+              <h3 className="text-[#2d4a6d] font-bold uppercase tracking-tight text-lg">Análise de Valores (Finalizadas)</h3>
               <p className="text-xs text-muted-foreground">(período x valor)</p>
             </div>
             <div className="bg-[#2d4a6d] text-white px-4 py-2 rounded flex items-center gap-2 text-xs">
@@ -175,7 +191,7 @@ export function TabHome() {
                   <p className="text-[10px] uppercase opacity-60">Média por Laudo</p>
                   <p className="text-3xl font-light tracking-tighter">
                     <span className="text-sm opacity-60 mr-1">R$</span>
-                    {(totalGeralAnalisado / (listaLaudos.length || 1)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    {(totalGeralAnalisado / (laudosFinalizados.length || 1)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
               </div>
@@ -205,7 +221,7 @@ export function TabHome() {
                 <div>
                   <p className="text-[10px] uppercase opacity-60">Média de Itens / Laudo</p>
                   <p className="text-3xl font-light tracking-tighter">
-                    { (listaLaudos.reduce((acc, l) => acc + l.analise.itensOrcamento.length, 0) / (listaLaudos.length || 1)).toFixed(1) }
+                    { (laudosFinalizados.reduce((acc, l) => acc + l.analise.itensOrcamento.length, 0) / (laudosFinalizados.length || 1)).toFixed(1) }
                     <span className="text-sm opacity-60 ml-1">itens</span>
                   </p>
                 </div>
@@ -215,14 +231,14 @@ export function TabHome() {
                   <div className="h-8 w-[2px] bg-[#4db6ac] opacity-40" />
                   <div>
                     <p className="text-[8px] uppercase opacity-60">Total Peças</p>
-                    <p className="text-lg font-medium">{listaLaudos.reduce((acc, l) => acc + l.analise.itensOrcamento.reduce((s, i) => s + i.qtdPeca, 0), 0)}</p>
+                    <p className="text-lg font-medium">{laudosFinalizados.reduce((acc, l) => acc + l.analise.itensOrcamento.reduce((s, i) => s + i.qtdPeca, 0), 0)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="h-8 w-[2px] bg-[#4db6ac] opacity-40" />
                   <div>
                     <p className="text-[8px] uppercase opacity-60">Total M.O.</p>
-                    <p className="text-lg font-medium">{listaLaudos.reduce((acc, l) => acc + l.analise.itensOrcamento.reduce((s, i) => s + i.qtdMaoObra, 0), 0)}</p>
+                    <p className="text-lg font-medium">{laudosFinalizados.reduce((acc, l) => acc + l.analise.itensOrcamento.reduce((s, i) => s + i.qtdMaoObra, 0), 0)}</p>
                   </div>
                 </div>
               </div>
@@ -235,20 +251,20 @@ export function TabHome() {
             <div className="flex flex-col items-center mb-6">
               <Truck className="h-10 w-10 text-[#4db6ac] mb-2" />
               <p className="text-xs uppercase opacity-60">Total Vistorias</p>
-              <p className="text-4xl font-bold">{listaLaudos.length.toString().padStart(2, '0')}</p>
+              <p className="text-4xl font-bold">{laudosFinalizados.length.toString().padStart(2, '0')}</p>
             </div>
             <div className="space-y-3 text-[10px] uppercase font-bold">
               <div className="flex justify-between items-center">
                 <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#4db6ac]" /> Aprovadas</span>
-                <span>{listaLaudos.filter(l => l.analise.itensOrcamento.every(i => i.status === 'aprovado')).length.toString().padStart(2, '0')}</span>
+                <span>{laudosFinalizados.filter(l => l.analise.itensOrcamento.every(i => i.status === 'aprovado')).length.toString().padStart(2, '0')}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="flex items-center gap-2"><Wrench className="h-3 w-3 text-orange-400" /> Em Análise</span>
-                <span>00</span>
+                <span className="flex items-center gap-2"><Wrench className="h-3 w-3 text-orange-400" /> Pendentes</span>
+                <span>{listaLaudos.filter(l => l.status === 'pendente').length.toString().padStart(2, '0')}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="flex items-center gap-2"><AlertCircle className="h-3 w-3 text-red-400" /> Com Glosa</span>
-                <span>{listaLaudos.filter(l => l.analise.itensOrcamento.some(i => i.status === 'reprovado')).length.toString().padStart(2, '0')}</span>
+                <span>{laudosFinalizados.filter(l => l.analise.itensOrcamento.some(i => i.status === 'reprovado')).length.toString().padStart(2, '0')}</span>
               </div>
             </div>
           </div>
