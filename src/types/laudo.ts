@@ -66,6 +66,7 @@ export interface DadosProcesso {
 }
 
 export interface LaudoPericial {
+  id: string;
   dadosCliente: DadosCliente;
   dadosVeiculo: DadosVeiculo;
   dadosOficina: DadosOficina;

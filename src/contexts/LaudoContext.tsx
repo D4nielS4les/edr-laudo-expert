@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import type { LaudoPericial } from "@/types/laudo";
 
-const defaultLaudo: LaudoPericial = {
+const createEmptyLaudo = (): LaudoPericial => ({
+  id: crypto.randomUUID(),
   dadosCliente: { solicitante: "", empresa: "", clienteFinal: "" },
   dadosVeiculo: { marcaModelo: "", anoFabricacao: "", anoModelo: "", placa: "", chassi: "", hodometro: "" },
   dadosOficina: { nome: "", endereco: "", bairro: "", cidade: "", telefone: "", responsavel: "", cnpj: "" },
@@ -11,10 +12,13 @@ const defaultLaudo: LaudoPericial = {
   conclusao: { parecerTecnico: "", recomendacoes: "", analistaVistoriador: "", gestorOperacoes: "" },
   dataLaudo: new Date().toISOString().split("T")[0],
   ordemServico: "",
-};
+});
 
 interface LaudoContextType {
   laudo: LaudoPericial;
+  listaLaudos: LaudoPericial[];
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
   updateLaudo: (updates: Partial<LaudoPericial>) => void;
   updateCliente: (updates: Partial<LaudoPericial["dadosCliente"]>) => void;
   updateVeiculo: (updates: Partial<LaudoPericial["dadosVeiculo"]>) => void;
@@ -22,12 +26,35 @@ interface LaudoContextType {
   updateProcesso: (updates: Partial<LaudoPericial["dadosProcesso"]>) => void;
   updateAnalise: (updates: Partial<LaudoPericial["analise"]>) => void;
   updateConclusao: (updates: Partial<LaudoPericial["conclusao"]>) => void;
+  salvarLaudoAtual: () => void;
+  carregarLaudo: (id: string) => void;
+  excluirLaudo: (id: string) => void;
+  novoLaudo: () => void;
 }
 
 const LaudoContext = createContext<LaudoContextType | undefined>(undefined);
 
 export function LaudoProvider({ children }: { children: ReactNode }) {
-  const [laudo, setLaudo] = useState<LaudoPericial>(defaultLaudo);
+  const [laudo, setLaudo] = useState<LaudoPericial>(createEmptyLaudo());
+  const [listaLaudos, setListaLaudos] = useState<LaudoPericial[]>([]);
+  const [activeTab, setActiveTab] = useState("home");
+
+  // Carregar lista do localStorage ao iniciar
+  useEffect(() => {
+    const saved = localStorage.getItem("edr_laudos_lista");
+    if (saved) {
+      try {
+        setListaLaudos(JSON.parse(saved));
+      } catch (e) {
+        console.error("Erro ao carregar laudos salvos", e);
+      }
+    }
+  }, []);
+
+  // Salvar lista no localStorage sempre que mudar
+  useEffect(() => {
+    localStorage.setItem("edr_laudos_lista", JSON.stringify(listaLaudos));
+  }, [listaLaudos]);
 
   const updateLaudo = (updates: Partial<LaudoPericial>) =>
     setLaudo((prev) => ({ ...prev, ...updates }));
@@ -50,8 +77,44 @@ export function LaudoProvider({ children }: { children: ReactNode }) {
   const updateConclusao = (updates: Partial<LaudoPericial["conclusao"]>) =>
     setLaudo((prev) => ({ ...prev, conclusao: { ...prev.conclusao, ...updates } }));
 
+  const salvarLaudoAtual = () => {
+    setListaLaudos((prev) => {
+      const index = prev.findIndex((l) => l.id === laudo.id);
+      if (index >= 0) {
+        const novaLista = [...prev];
+        novaLista[index] = laudo;
+        return novaLista;
+      }
+      return [laudo, ...prev];
+    });
+  };
+
+  const carregarLaudo = (id: string) => {
+    const encontrado = listaLaudos.find((l) => l.id === id);
+    if (encontrado) {
+      setLaudo(encontrado);
+      setActiveTab("cliente");
+    }
+  };
+
+  const excluirLaudo = (id: string) => {
+    setListaLaudos((prev) => prev.filter((l) => l.id !== id));
+    if (laudo.id === id) {
+      setLaudo(createEmptyLaudo());
+    }
+  };
+
+  const novoLaudo = () => {
+    setLaudo(createEmptyLaudo());
+    setActiveTab("cliente");
+  };
+
   return (
-    <LaudoContext.Provider value={{ laudo, updateLaudo, updateCliente, updateVeiculo, updateOficina, updateProcesso, updateAnalise, updateConclusao }}>
+    <LaudoContext.Provider value={{ 
+      laudo, listaLaudos, activeTab, setActiveTab,
+      updateLaudo, updateCliente, updateVeiculo, updateOficina, updateProcesso, updateAnalise, updateConclusao,
+      salvarLaudoAtual, carregarLaudo, excluirLaudo, novoLaudo
+    }}>
       {children}
     </LaudoContext.Provider>
   );
