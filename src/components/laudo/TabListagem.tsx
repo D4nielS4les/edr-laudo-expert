@@ -14,6 +14,10 @@ export function TabListagem() {
     return `${d}/${m}/${y}`;
   };
 
+  const formatCurrency = (val: number) => {
+    return val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -36,14 +40,20 @@ export function TabListagem() {
                   <TableHead>Placa</TableHead>
                   <TableHead>Cliente / Empresa</TableHead>
                   <TableHead>Data</TableHead>
-                  <TableHead>Status Itens</TableHead>
+                  <TableHead>Vlr. Aprovado</TableHead>
+                  <TableHead>Glosa</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {listaLaudos.map((l) => {
-                  const totalItens = l.analise.itensOrcamento.length;
-                  const aprovados = l.analise.itensOrcamento.filter(i => i.status === "aprovado").length;
+                  const itens = l.analise.itensOrcamento;
+                  const valorAprovado = itens
+                    .filter(i => i.status === "aprovado")
+                    .reduce((sum, i) => sum + i.valorTotal, 0);
+                  const valorGlosa = itens
+                    .filter(i => i.status === "reprovado")
+                    .reduce((sum, i) => sum + i.valorTotal, 0);
                   
                   return (
                     <TableRow key={l.id}>
@@ -58,10 +68,11 @@ export function TabListagem() {
                         </div>
                       </TableCell>
                       <TableCell>{formatDate(l.dataLaudo)}</TableCell>
-                      <TableCell>
-                        <span className="text-xs text-muted-foreground">
-                          {aprovados}/{totalItens} aprovados
-                        </span>
+                      <TableCell className="text-success font-semibold">
+                        {formatCurrency(valorAprovado)}
+                      </TableCell>
+                      <TableCell className="text-destructive font-semibold">
+                        {formatCurrency(valorGlosa)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
