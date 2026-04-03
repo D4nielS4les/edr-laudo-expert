@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Edit, Trash2, FileSearch, Plus } from "lucide-react";
 import { useLaudo } from "@/contexts/LaudoContext";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export function TabListagem() {
   const { listaLaudos, carregarLaudo, excluirLaudo, novoLaudo } = useLaudo();
@@ -55,11 +56,23 @@ export function TabListagem() {
                     .filter(i => i.status === "reprovado")
                     .reduce((sum, i) => sum + i.valorTotal, 0);
                   
+                  const temGlosa = valorGlosa > 0;
+                  
                   return (
                     <TableRow key={l.id}>
                       <TableCell className="font-medium">{l.ordemServico || "—"}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="font-mono">{l.dadosVeiculo.placa || "S/ PLACA"}</Badge>
+                        <Badge 
+                          variant="outline" 
+                          className={cn(
+                            "font-mono border-2",
+                            temGlosa 
+                              ? "border-destructive text-destructive bg-destructive/5" 
+                              : "border-success text-success bg-success/5"
+                          )}
+                        >
+                          {l.dadosVeiculo.placa || "S/ PLACA"}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col">
