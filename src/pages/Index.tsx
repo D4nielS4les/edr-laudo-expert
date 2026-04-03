@@ -11,6 +11,8 @@ import { TabFotos } from "@/components/laudo/TabFotos";
 import { TabAnalise } from "@/components/laudo/TabAnalise";
 import { TabConclusao } from "@/components/laudo/TabConclusao";
 import { useToast } from "@/hooks/use-toast";
+import { useLaudo } from "@/contexts/LaudoContext";
+import { generateLaudoPDF } from "@/utils/generateLaudoPDF";
 
 const tabs = [
   { value: "home", label: "Início", icon: Home },
