@@ -6,15 +6,15 @@ import {
 } from "recharts";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Truck, Clock, DollarSign, Wrench, AlertCircle, FileSearch } from "lucide-react";
+import { Truck, Clock, DollarSign, Wrench, AlertCircle, FileSearch, ClipboardList } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function TabHome() {
-  const { listaLaudos } = useLaudo();
+  const { listaLaudos, setActiveTab } = useLaudo();
   
-  // Filtra apenas os laudos finalizados para o dashboard
   const laudosFinalizados = listaLaudos.filter(l => l.status === 'finalizado');
+  const laudosPendentes = listaLaudos.filter(l => l.status === 'pendente' || !l.status);
   
-  // Processamento de dados para o gráfico de barras
   const processData = () => {
     const groups: Record<string, any> = {};
     const sortedLaudos = [...laudosFinalizados].sort((a, b) => a.dataLaudo.localeCompare(b.dataLaudo));
@@ -39,7 +39,7 @@ export function TabHome() {
       groups[month].qtd += 1;
     });
 
-    return Object.values(groups).slice(-4); // Últimos 4 períodos
+    return Object.values(groups).slice(-4);
   };
 
   const chartData = processData();
@@ -63,15 +63,55 @@ export function TabHome() {
   const formatCurrency = (val: number) => 
     val.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
-  // Se não houver laudos finalizados, exibe um estado vazio amigável
   if (laudosFinalizados.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 bg-muted/30 rounded-xl border-2 border-dashed border-border">
-        <FileSearch className="h-16 w-16 text-muted-foreground/30 mb-4" />
-        <h3 className="text-xl font-semibold text-muted-foreground">Dashboard Vazio</h3>
-        <p className="text-sm text-muted-foreground max-w-xs text-center mt-2">
-          Finalize vistorias na aba de Pendentes para visualizar as métricas e gráficos de desempenho aqui.
-        </p>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="bg-[#2d4a6d] text-white border-none shadow-lg">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase opacity-70 font-bold tracking-wider">Vistorias Pendentes</p>
+                <h3 className="text-4xl font-black mt-1">{laudosPendentes.length.toString().padStart(2, '0')}</h3>
+              </div>
+              <div className="bg-white/10 p-3 rounded-full">
+                <Clock className="h-8 w-8 text-orange-400" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-none shadow-md">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase text-muted-foreground font-bold tracking-wider">Vistorias Finalizadas</p>
+                <h3 className="text-4xl font-black mt-1 text-[#2d4a6d]">00</h3>
+              </div>
+              <div className="bg-muted p-3 rounded-full">
+                <Truck className="h-8 w-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-none shadow-md">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase text-muted-foreground font-bold tracking-wider">Total Geral</p>
+                <h3 className="text-4xl font-black mt-1 text-[#2d4a6d]">{listaLaudos.length.toString().padStart(2, '0')}</h3>
+              </div>
+              <div className="bg-muted p-3 rounded-full">
+                <ClipboardList className="h-8 w-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex flex-col items-center justify-center py-20 bg-muted/30 rounded-xl border-2 border-dashed border-border">
+          <FileSearch className="h-16 w-16 text-muted-foreground/30 mb-4" />
+          <h3 className="text-xl font-semibold text-muted-foreground">Dashboard de Análise Vazio</h3>
+          <p className="text-sm text-muted-foreground max-w-xs text-center mt-2 mb-6">
+            Finalize vistorias na aba de Pendentes para visualizar as métricas financeiras e gráficos de desempenho.
+          </p>
+          <Button onClick={() => setActiveTab("pendentes")} variant="outline" className="gap-2">
+            Ver Pendentes ({laudosPendentes.length})
+          </Button>
+        </div>
       </div>
     );
   }
@@ -79,7 +119,6 @@ export function TabHome() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden rounded-xl border border-border shadow-2xl bg-[#e0e6ed]">
       
-      {/* Lado Esquerdo - Status (Navy) */}
       <div className="lg:col-span-3 bg-[#2d4a6d] p-8 text-white flex flex-col items-center">
         <div className="mb-8">
           <Truck className="h-20 w-20 text-[#4db6ac]" />
@@ -91,13 +130,13 @@ export function TabHome() {
             <span className="opacity-80">Total Finalizado</span>
             <span className="font-bold">{laudosFinalizados.length}</span>
           </div>
+          <div className="flex justify-between text-sm p-2 bg-white/5 rounded border border-white/10">
+            <span className="opacity-80 flex items-center gap-2"><Clock className="h-4 w-4 text-orange-400" /> Pendentes</span>
+            <span className="font-bold text-orange-400">{laudosPendentes.length.toString().padStart(2, '0')}</span>
+          </div>
           <div className="flex justify-between text-sm">
             <span className="opacity-80">Com Glosa</span>
             <span className="font-bold text-[#4db6ac]">{laudosFinalizados.filter(l => l.analise.itensOrcamento.some(i => i.status === 'reprovado')).length}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="opacity-80">Pendentes</span>
-            <span className="font-bold">{listaLaudos.filter(l => l.status === 'pendente').length.toString().padStart(2, '0')}</span>
           </div>
         </div>
 
@@ -125,10 +164,8 @@ export function TabHome() {
         </div>
       </div>
 
-      {/* Lado Direito - Gráficos e KPIs */}
       <div className="lg:col-span-9 flex flex-col">
         
-        {/* Topo - Análise de Carga (Light) */}
         <div className="p-8 flex-1">
           <div className="flex justify-between items-start mb-8">
             <div>
@@ -179,10 +216,8 @@ export function TabHome() {
           </div>
         </div>
 
-        {/* Rodapé - Indicadores Grandes (Navy) */}
         <div className="bg-[#2d4a6d] p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 text-white">
           <div className="lg:col-span-9 grid grid-cols-1 md:grid-cols-2 gap-12">
-            {/* Seção Custo */}
             <div className="space-y-6">
               <h4 className="text-xs font-bold uppercase tracking-widest opacity-80">Valores Financeiros</h4>
               <div className="flex items-center gap-4">
@@ -213,7 +248,6 @@ export function TabHome() {
               </div>
             </div>
 
-            {/* Seção Itens */}
             <div className="space-y-6">
               <h4 className="text-xs font-bold uppercase tracking-widest opacity-80">Volume de Itens</h4>
               <div className="flex items-center gap-4">
@@ -245,7 +279,6 @@ export function TabHome() {
             </div>
           </div>
 
-          {/* Resumo Lateral Direita */}
           <div className="lg:col-span-3 border-l border-white/10 pl-8 flex flex-col justify-center">
             <h4 className="text-xs font-bold uppercase tracking-widest opacity-80 mb-4 text-center">Resumo Geral</h4>
             <div className="flex flex-col items-center mb-6">
@@ -258,9 +291,9 @@ export function TabHome() {
                 <span className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-[#4db6ac]" /> Aprovadas</span>
                 <span>{laudosFinalizados.filter(l => l.analise.itensOrcamento.every(i => i.status === 'aprovado')).length.toString().padStart(2, '0')}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="flex items-center gap-2"><Wrench className="h-3 w-3 text-orange-400" /> Pendentes</span>
-                <span>{listaLaudos.filter(l => l.status === 'pendente').length.toString().padStart(2, '0')}</span>
+              <div className="flex justify-between items-center p-1 bg-white/5 rounded">
+                <span className="flex items-center gap-2"><Clock className="h-3 w-3 text-orange-400" /> Pendentes</span>
+                <span className="text-orange-400">{laudosPendentes.length.toString().padStart(2, '0')}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="flex items-center gap-2"><AlertCircle className="h-3 w-3 text-red-400" /> Com Glosa</span>
