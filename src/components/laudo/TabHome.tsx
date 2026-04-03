@@ -53,11 +53,11 @@ export function TabHome() {
   const totalGeralGlosa = laudosFinalizados.reduce((acc, l) => 
     acc + l.analise.itensOrcamento.filter(i => i.status === "reprovado").reduce((s, i) => s + i.valorTotal, 0), 0);
 
-  const taxaAprovacao = totalGeralAnalisado > 0 ? (totalGeralAprovado / totalGeralAnalisado) * 100 : 0;
+  const taxaGlosa = totalGeralAnalisado > 0 ? (totalGeralGlosa / totalGeralAnalisado) * 100 : 0;
 
   const donutData = [
-    { name: "Aprovado", value: totalGeralAprovado },
-    { name: "Restante", value: totalGeralAnalisado - totalGeralAprovado },
+    { name: "Glosa", value: totalGeralGlosa },
+    { name: "Restante", value: totalGeralAnalisado - totalGeralGlosa },
   ];
 
   const formatCurrency = (val: number) => 
@@ -142,8 +142,8 @@ export function TabHome() {
 
         <div className="relative w-full aspect-square flex items-center justify-center">
           <div className="absolute text-center">
-            <span className="text-4xl font-bold text-[#4db6ac]">{taxaAprovacao.toFixed(0)}%</span>
-            <p className="text-[10px] uppercase opacity-60">Taxa de Aprovação</p>
+            <span className="text-4xl font-bold text-[#4db6ac]">{taxaGlosa.toFixed(0)}%</span>
+            <p className="text-[10px] uppercase opacity-60">Percentual de Glosa</p>
           </div>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -195,11 +195,11 @@ export function TabHome() {
               <div className="h-full w-12 bg-[#cfd8dc] relative rounded-sm overflow-hidden self-center">
                 <div 
                   className="absolute bottom-0 w-full bg-[#2d4a6d]" 
-                  style={{ height: `${taxaAprovacao}%` }}
+                  style={{ height: `${(totalGeralAprovado / totalGeralAnalisado) * 100}%` }}
                 />
                 <div 
                   className="absolute bottom-0 w-full bg-[#4db6ac] opacity-80" 
-                  style={{ height: `${(totalGeralGlosa / totalGeralAnalisado) * 100}%` }}
+                  style={{ height: `${taxaGlosa}%` }}
                 />
               </div>
               <p className="text-[10px] font-bold text-center mt-2 uppercase text-[#2d4a6d]">Total</p>
