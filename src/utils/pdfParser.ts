@@ -1,15 +1,13 @@
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configuração do worker usando unpkg que é mais resiliente para versões específicas
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+// Configuração do worker usando a versão exata instalada para evitar conflitos
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 export async function extractTextFromPDF(file: File): Promise<string> {
   try {
     const arrayBuffer = await file.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-    
     const loadingTask = pdfjsLib.getDocument({
-      data: uint8Array,
+      data: arrayBuffer,
       useWorkerFetch: true,
       isEvalSupported: false,
     });
@@ -20,20 +18,21 @@ export async function extractTextFromPDF(file: File): Promise<string> {
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
+      // Preserva a ordem das linhas unindo os itens de texto
       const pageText = textContent.items
         .map((item: any) => item.str)
         .join(" ");
       fullText += pageText + "\n";
     }
 
-    if (!fullText.trim()) {
-      throw new Error("O PDF parece estar vazio ou é uma imagem (OCR necessário).");
-    }
+    console.log("--- INÍCIO DO TEXTO EXTRAÍDO ---");
+    console.log(fullText);
+    console.log("--- FIM DO TEXTO EXTRAÍDO ---");
 
     return fullText;
   } catch (error) {
-    console.error("Erro detalhado no PDF.js:", error);
-    throw error;
+    console.error("Erro no PDF.js:", error);
+    throw new Error("Falha ao processar o arquivo PDF. Verifique o console para detalhes.");
   }
 }
 
@@ -46,43 +45,39 @@ export function parseOSData(text: string) {
     itens: []
   };
 
-  // Função auxiliar para busca flexível
-  const extract = (regex: RegExp) => {
-    const match = text.match(regex);
-    return match ? match[1].trim() : "";
-  };
+  // Limpeza básica do texto
+  const cleanText = text.replace(/\s+/g, ' ');
 
-  // Mapeamento de campos baseado no modelo Ticket Log / Edenred
-  data.ordemServico = extract(/Ordem de Serviço[:\s]+(\d+)/i) || extract(/OS[:\s]+(\d+)/i);
-  data.dadosVeiculo.placa = extract(/Placa[:\s]+([A-Z]{3}[0-9][A-Z0-9][0-9]{2})/i);
-  data.dadosVeiculo.marcaModelo = extract(/Veículo[:\s]+([^|]+)/i) || extract(/Modelo[:\s]+([^|]+)/i);
-  data.dadosCliente.empresa = extract(/Empresa[:\s]+([^|]+)/i) || extract(/Cliente[:\s]+([^|]+)/i);
-  data.dadosOficina.nome = extract(/Oficina[:\s]+([^|]+)/i) || extract(/Estabelecimento[:\s]+([^|]+)/i);
-  
-  // Tenta capturar o ano (ex: 2015/2016)
-  const anoMatch = text.match(/Ano[:\s]+(\d{4})\/(\d{4})/i);
-  if (anoMatch) {
-    data.dadosVeiculo.anoFabricacao = anoMatch[1];
-    data.dadosVeiculo.anoModelo = anoMatch[2];
-  }
+  // Captura de campos principais com buscas mais amplas
+  const osMatch = cleanText.match(/(?:Ordem de Serviço|OS|Nº OS)[:\s]+(\d+)/i);
+  if (osMatch) data.ordemServico = osMatch[1];
 
-  // Captura de itens do orçamento
-  // Padrão: Código(8) Descrição Qtd VlrPeca QtdMO VlrMO
-  // Ex: 88331579 ROLAMENTO 1 150,00 1 80,00
-  const itemRegex = /(\d{8})\s+([A-Z0-9\s\-\.\/]{5,50}?)\s+(\d+)\s+([\d,.]+)\s+(\d+)\s+([\d,.]+)/gi;
+  const placaMatch = cleanText.match(/(?:Placa)[:\s]+([A-Z]{3}[0-9][A-Z0-9][0-9]{2})/i);
+  if (placaMatch) data.dadosVeiculo.placa = placaMatch[1];
+
+  const chassiMatch = cleanText.match(/(?:Chassi)[:\s]+([A-Z0-9]{17})/i);
+  if (chassiMatch) data.dadosVeiculo.chassi = chassiMatch[1];
+
+  // Captura de Itens (Lógica de Tabela)
+  // Padrão comum: Código(8) Descrição Qtd Valor Qtd Valor
+  // Exemplo: 88331579 ROLAMENTO 1 150,00 1 80,00
+  const itemRegex = /(\d{8})\s+([A-Z0-9\s\-\.\/]{3,60}?)\s+(\d+)\s+([\d,.]+)\s+(\d+)\s+([\d,.]+)/gi;
   let match;
   
-  while ((match = itemRegex.exec(text)) !== null) {
+  while ((match = itemRegex.exec(cleanText)) !== null) {
+    const codigo = match[1];
+    const descricao = match[2].trim();
     const qtdPeca = parseInt(match[3]);
     const valorPeca = parseFloat(match[4].replace(/\./g, '').replace(',', '.'));
     const qtdMO = parseInt(match[5]);
     const valorMO = parseFloat(match[6].replace(/\./g, '').replace(',', '.'));
 
+    // Só adiciona se tiver pelo menos uma quantidade válida
     if (!isNaN(qtdPeca) || !isNaN(qtdMO)) {
       data.itens.push({
         id: crypto.randomUUID(),
-        codigo: match[1],
-        descricao: match[2].trim(),
+        codigo,
+        descricao,
         qtdPeca: isNaN(qtdPeca) ? 0 : qtdPeca,
         valorPeca: isNaN(valorPeca) ? 0 : valorPeca,
         qtdMaoObra: isNaN(qtdMO) ? 0 : qtdMO,
