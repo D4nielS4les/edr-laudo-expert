@@ -1,27 +1,29 @@
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configuração do worker do PDF.js
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+// Configuração do worker usando um link de CDN mais estável e compatível
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 export async function extractTextFromPDF(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+  const pdf = await loadingTask.promise;
   let fullText = "";
 
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const textContent = await page.getTextContent();
-    const pageText = textContent.items.map((item: any) => item.str).join(" ");
+    // Filtra apenas itens que possuem conteúdo de texto
+    const pageText = textContent.items
+      .map((item: any) => item.str)
+      .join(" ");
     fullText += pageText + "\n";
   }
 
+  console.log("Texto extraído do PDF:", fullText); // Para debug no console
   return fullText;
 }
 
 export function parseOSData(text: string) {
-  // Esta função tenta encontrar padrões comuns em OS de frotas (Ticket Log/Edenred)
-  // Baseado no modelo fornecido
-  
   const data: any = {
     dadosCliente: {},
     dadosVeiculo: {},
@@ -29,36 +31,46 @@ export function parseOSData(text: string) {
     itens: []
   };
 
-  // Extração de campos básicos usando Regex
-  const osMatch = text.match(/Ordem de Serviço[:\s]+(\d+)/i);
-  if (osMatch) data.ordemServico = osMatch[1];
+  // Regex mais flexíveis (ignoram espaços extras e variações de caixa)
+  const findValue = (regex: RegExp) => {
+    const match = text.match(regex);
+    return match ? match[1].trim() : "";
+  };
 
-  const placaMatch = text.match(/Placa[:\s]+([A-Z]{3}[0-9][A-Z0-9][0-9]{2})/i);
-  if (placaMatch) data.dadosVeiculo.placa = placaMatch[1];
+  data.ordemServico = findValue(/Ordem de Serviço[:\s]+(\d+)/i);
+  data.dadosVeiculo.placa = findValue(/Placa[:\s]+([A-Z]{3}[0-9][A-Z0-9][0-9]{2})/i);
+  data.dadosVeiculo.marcaModelo = findValue(/Veículo[:\s]+([^|]+)/i);
+  data.dadosCliente.empresa = findValue(/Empresa[:\s]+([^|]+)/i);
+  data.dadosOficina.nome = findValue(/Oficina[:\s]+([^|]+)/i);
 
-  const veiculoMatch = text.match(/Veículo[:\s]+([^|]+)/i);
-  if (veiculoMatch) data.dadosVeiculo.marcaModelo = veiculoMatch[1].trim();
+  // Tenta capturar o ano se disponível (ex: 2015/2016)
+  const anoMatch = text.match(/Ano[:\s]+(\d{4})\/(\d{4})/i);
+  if (anoMatch) {
+    data.dadosVeiculo.anoFabricacao = anoMatch[1];
+    data.dadosVeiculo.anoModelo = anoMatch[2];
+  }
 
-  const empresaMatch = text.match(/Empresa[:\s]+([^|]+)/i);
-  if (empresaMatch) data.dadosCliente.empresa = empresaMatch[1].trim();
-
-  const oficinaMatch = text.match(/Oficina[:\s]+([^|]+)/i);
-  if (oficinaMatch) data.dadosOficina.nome = oficinaMatch[1].trim();
-
-  // Lógica simplificada para itens (geralmente em tabelas)
-  // Procura por padrões de código e descrição
-  const itemRegex = /(\d{8})\s+([A-Z\s-]+)\s+(\d+)\s+([\d,.]+)\s+(\d+)\s+([\d,.]+)/g;
+  // Processamento de itens com Regex mais tolerante
+  // Padrão: Código(8 dígitos) Descrição(Texto) Qtd Valor Qtd Valor
+  const itemRegex = /(\d{8})\s+([A-Z0-9\s\-\.\/]+?)\s+(\d+)\s+([\d,.]+)\s+(\d+)\s+([\d,.]+)/gi;
   let match;
+  
   while ((match = itemRegex.exec(text)) !== null) {
+    const qtdPeca = parseInt(match[3]);
+    const valorPeca = parseFloat(match[4].replace('.', '').replace(',', '.'));
+    const qtdMO = parseInt(match[5]);
+    const valorMO = parseFloat(match[6].replace('.', '').replace(',', '.'));
+
     data.itens.push({
       id: crypto.randomUUID(),
       codigo: match[1],
       descricao: match[2].trim(),
-      qtdPeca: parseInt(match[3]),
-      valorPeca: parseFloat(match[4].replace(',', '.')),
-      qtdMaoObra: parseInt(match[5]),
-      valorMaoObra: parseFloat(match[6].replace(',', '.')),
-      valorTotal: (parseInt(match[3]) * parseFloat(match[4].replace(',', '.'))) + (parseInt(match[5]) * parseFloat(match[6].replace(',', '.'))),
+      qtdPeca: isNaN(qtdPeca) ? 0 : qtdPeca,
+      valorPeca: isNaN(valorPeca) ? 0 : valorPeca,
+      qtdMaoObra: isNaN(qtdMO) ? 0 : qtdMO,
+      valorMaoObra: isNaN(valorMO) ? 0 : valorMO,
+      valorTotal: (isNaN(qtdPeca) ? 0 : qtdPeca * (isNaN(valorPeca) ? 0 : valorPeca)) + 
+                  (isNaN(qtdMO) ? 0 : qtdMO * (isNaN(valorMO) ? 0 : valorMO)),
       status: 'pendente',
       justificativa: ''
     });
