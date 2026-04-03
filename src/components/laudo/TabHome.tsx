@@ -1,26 +1,19 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, ClipboardCheck, Camera, BarChart3, TrendingUp, DollarSign, AlertTriangle } from "lucide-react";
+import { ClipboardCheck, TrendingUp, DollarSign, AlertTriangle, PieChart as PieIcon, BarChart3 } from "lucide-react";
 import { useLaudo } from "@/contexts/LaudoContext";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  LineChart, Line, Legend, AreaChart, Area 
+  AreaChart, Area, PieChart, Pie, Cell, Legend 
 } from "recharts";
-import { format, parseISO, startOfMonth } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export function TabHome() {
-  const { laudo, listaLaudos } = useLaudo();
+  const { listaLaudos } = useLaudo();
   
-  // Estatísticas do laudo atual (mantendo o que já existia)
-  const totalItens = laudo.analise.itensOrcamento.length;
-  const aprovados = laudo.analise.itensOrcamento.filter(i => i.status === "aprovado").length;
-  const totalFotos = laudo.fotos.length;
-
-  // Processamento de dados para os gráficos de performance
+  // Processamento de dados para os gráficos
   const processData = () => {
     const groups: Record<string, any> = {};
-    
-    // Ordenar por data
     const sortedLaudos = [...listaLaudos].sort((a, b) => a.dataLaudo.localeCompare(b.dataLaudo));
 
     sortedLaudos.forEach(l => {
@@ -59,11 +52,18 @@ export function TabHome() {
   const totalGeralGlosa = listaLaudos.reduce((acc, l) => 
     acc + l.analise.itensOrcamento.filter(i => i.status === "reprovado").reduce((s, i) => s + i.valorTotal, 0), 0);
 
+  const taxaGlosa = totalGeralAnalisado > 0 ? (totalGeralGlosa / totalGeralAnalisado) * 100 : 0;
+
+  const distributionData = [
+    { name: "Aprovado", value: totalGeralAprovado, color: "#10b981" },
+    { name: "Glosa", value: totalGeralGlosa, color: "#ef4444" },
+  ];
+
   const stats = [
-    { label: "Total Analisado", value: totalGeralAnalisado, icon: DollarSign, color: "bg-info/10 text-info" },
-    { label: "Total Aprovado", value: totalGeralAprovado, icon: ClipboardCheck, color: "bg-success/10 text-success" },
-    { label: "Total Glosado", value: totalGeralGlosa, icon: AlertTriangle, color: "bg-destructive/10 text-destructive" },
-    { label: "Vistorias Realizadas", value: listaLaudos.length, icon: TrendingUp, color: "bg-accent/10 text-accent" },
+    { label: "Total Analisado", value: totalGeralAnalisado, icon: DollarSign, color: "text-blue-600", bg: "bg-blue-50" },
+    { label: "Total Aprovado", value: totalGeralAprovado, icon: ClipboardCheck, color: "text-emerald-600", bg: "bg-emerald-50" },
+    { label: "Total Glosado", value: totalGeralGlosa, icon: AlertTriangle, color: "text-rose-600", bg: "bg-rose-50" },
+    { label: "Taxa de Glosa", value: `${taxaGlosa.toFixed(1)}%`, icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50" },
   ];
 
   const formatCurrency = (val: number) => 
@@ -71,35 +71,77 @@ export function TabHome() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-foreground">Dashboard de Performance</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Visão consolidada de indicadores e evolução das vistorias.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground tracking-tight">Dashboard de Performance</h2>
+          <p className="text-sm text-muted-foreground">Indicadores estratégicos de vistorias e economia gerada.</p>
+        </div>
+        <div className="bg-muted/50 px-4 py-2 rounded-full text-xs font-medium text-muted-foreground border border-border">
+          Total de {listaLaudos.length} vistorias processadas
+        </div>
       </div>
 
+      {/* Indicadores Principais */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s) => (
-          <Card key={s.label} className="border-border/50">
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${s.color}`}>
-                <s.icon className="h-5 w-5" />
+          <Card key={s.label} className="border-none shadow-sm bg-card">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <div className={`p-2 rounded-lg ${s.bg} ${s.color}`}>
+                  <s.icon className="h-5 w-5" />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">KPI</span>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{s.label}</p>
-                <p className="text-lg font-bold text-foreground">
-                  {typeof s.value === 'number' && s.label.includes('Total') ? formatCurrency(s.value) : s.value}
-                </p>
-              </div>
+              <p className="text-sm font-medium text-muted-foreground">{s.label}</p>
+              <p className={`text-2xl font-bold tracking-tight ${s.color}`}>
+                {typeof s.value === 'number' ? formatCurrency(s.value) : s.value}
+              </p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Gráfico de Distribuição (Donut) */}
+        <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle className="text-base">Evolução de Valores (Aprovado vs Glosa)</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              <PieIcon className="h-4 w-4 text-muted-foreground" /> Distribuição de Valores
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="h-[300px] flex flex-col items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={distributionData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {distributionData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                <Legend verticalAlign="bottom" height={36}/>
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="text-center mt-2">
+              <p className="text-xs text-muted-foreground">Economia Gerada (Glosa)</p>
+              <p className="text-lg font-bold text-rose-600">{formatCurrency(totalGeralGlosa)}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Gráfico de Evolução Mensal */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-muted-foreground" /> Evolução Financeira Mensal
+            </CardTitle>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -109,53 +151,34 @@ export function TabHome() {
                     <stop offset="5%" stopColor="#10b981" stopOpacity={0.1}/>
                     <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                   </linearGradient>
-                  <linearGradient id="colorGlosa" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-                  </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `R$ ${v/1000}k`} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} dy={10} />
+                <YAxis fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `R$ ${v/1000}k`} />
                 <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                <Legend />
-                <Area type="monotone" dataKey="aprovado" name="Aprovado" stroke="#10b981" fillOpacity={1} fill="url(#colorAprovado)" />
-                <Area type="monotone" dataKey="glosa" name="Glosa" stroke="#ef4444" fillOpacity={1} fill="url(#colorGlosa)" />
+                <Area type="monotone" dataKey="aprovado" name="Aprovado" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorAprovado)" />
+                <Area type="monotone" dataKey="glosa" name="Glosa" stroke="#ef4444" strokeWidth={2} fill="transparent" strokeDasharray="5 5" />
               </AreaChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Volume de Vistorias por Período</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip />
-                <Bar dataKey="qtd" name="Qtd. Vistorias" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
-              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
+      {/* Volume de Vistorias */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Resumo de Atividades</CardTitle>
+          <CardTitle className="text-base">Volume de Vistorias por Período</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <div className="flex items-start gap-3">
-            <TrendingUp className="h-5 w-5 text-accent mt-0.5 shrink-0" />
-            <div>
-              <p className="font-medium text-foreground">Performance Operacional</p>
-              <p>O sistema processou {listaLaudos.length} vistorias até o momento, com uma taxa de glosa consolidada de {totalGeralAnalisado > 0 ? ((totalGeralGlosa / totalGeralAnalisado) * 100).toFixed(1) : 0}% sobre o valor total analisado.</p>
-            </div>
-          </div>
+        <CardContent className="h-[200px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+              <XAxis dataKey="month" fontSize={11} tickLine={false} axisLine={false} />
+              <YAxis fontSize={11} tickLine={false} axisLine={false} />
+              <Tooltip />
+              <Bar dataKey="qtd" name="Qtd. Vistorias" fill="#1e293b" radius={[4, 4, 0, 0]} barSize={40} />
+            </BarChart>
+          </ResponsiveContainer>
         </CardContent>
       </Card>
     </div>
