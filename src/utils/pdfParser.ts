@@ -18,21 +18,16 @@ export async function extractTextFromPDF(file: File): Promise<string> {
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
-      // Preserva a ordem das linhas unindo os itens de texto
       const pageText = textContent.items
         .map((item: any) => item.str)
         .join(" ");
       fullText += pageText + "\n";
     }
 
-    console.log("--- INÍCIO DO TEXTO EXTRAÍDO ---");
-    console.log(fullText);
-    console.log("--- FIM DO TEXTO EXTRAÍDO ---");
-
     return fullText;
   } catch (error) {
     console.error("Erro no PDF.js:", error);
-    throw new Error("Falha ao processar o arquivo PDF. Verifique o console para detalhes.");
+    throw new Error("Falha ao processar o arquivo PDF.");
   }
 }
 
@@ -45,22 +40,43 @@ export function parseOSData(text: string) {
     itens: []
   };
 
-  // Limpeza básica do texto
+  // Limpeza básica do texto para facilitar a busca
   const cleanText = text.replace(/\s+/g, ' ');
 
-  // Captura de campos principais com buscas mais amplas
-  const osMatch = cleanText.match(/(?:Ordem de Serviço|OS|Nº OS)[:\s]+(\d+)/i);
-  if (osMatch) data.ordemServico = osMatch[1];
+  // Função auxiliar para extração segura
+  const extract = (regex: RegExp) => {
+    const match = cleanText.match(regex);
+    return match ? match[1].trim() : "";
+  };
 
-  const placaMatch = cleanText.match(/(?:Placa)[:\s]+([A-Z]{3}[0-9][A-Z0-9][0-9]{2})/i);
-  if (placaMatch) data.dadosVeiculo.placa = placaMatch[1];
+  // --- CAPTURA DE DADOS GERAIS ---
+  data.ordemServico = extract(/(?:Ordem de Serviço|OS|Nº OS)[:\s]+(\d+)/i);
+  
+  // Dados do Cliente
+  data.dadosCliente.solicitante = extract(/(?:Solicitante|Usuário)[:\s]+([^|]+?)(?=\s(?:Empresa|Cliente|Placa|$))/i);
+  data.dadosCliente.clienteFinal = extract(/(?:Cliente|Cliente Final)[:\s]+([^|]+?)(?=\s(?:Solicitante|Empresa|Veículo|$))/i);
+  data.dadosCliente.empresa = extract(/(?:Empresa)[:\s]+([^|]+?)(?=\s(?:Cliente|Solicitante|Placa|$))/i);
 
-  const chassiMatch = cleanText.match(/(?:Chassi)[:\s]+([A-Z0-9]{17})/i);
-  if (chassiMatch) data.dadosVeiculo.chassi = chassiMatch[1];
+  // Dados do Veículo
+  data.dadosVeiculo.placa = extract(/(?:Placa)[:\s]+([A-Z]{3}[0-9][A-Z0-9][0-9]{2})/i);
+  data.dadosVeiculo.chassi = extract(/(?:Chassi)[:\s]+([A-Z0-9]{17})/i);
+  data.dadosVeiculo.marcaModelo = extract(/(?:Veículo|Modelo|Marca\/Modelo)[:\s]+([^|]+?)(?=\s(?:Ano|Placa|Chassi|$))/i);
+  
+  // Hodômetro (Quilometragem)
+  data.dadosVeiculo.hodometro = extract(/(?:Quilometragem|Km|Quilometragem Informada|Hodômetro)[:\s]+([\d.]+)/i);
 
-  // Captura de Itens (Lógica de Tabela)
-  // Padrão comum: Código(8) Descrição Qtd Valor Qtd Valor
-  // Exemplo: 88331579 ROLAMENTO 1 150,00 1 80,00
+  // Ano (Fabricação/Modelo) - Tenta padrões como "2015/2016" ou "Ano: 2015"
+  const anoMatch = cleanText.match(/(?:Ano|Ano Fab\/Mod)[:\s]+(\d{4})(?:\/(\d{4}))?/i);
+  if (anoMatch) {
+    data.dadosVeiculo.anoFabricacao = anoMatch[1];
+    data.dadosVeiculo.anoModelo = anoMatch[2] || anoMatch[1];
+  }
+
+  // Dados da Oficina
+  data.dadosOficina.nome = extract(/(?:Oficina|Estabelecimento|Prestador)[:\s]+([^|]+?)(?=\s(?:Endereço|CNPJ|$))/i);
+  data.dadosOficina.cnpj = extract(/(?:CNPJ)[:\s]+(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/i);
+
+  // --- CAPTURA DE ITENS DO ORÇAMENTO ---
   const itemRegex = /(\d{8})\s+([A-Z0-9\s\-\.\/]{3,60}?)\s+(\d+)\s+([\d,.]+)\s+(\d+)\s+([\d,.]+)/gi;
   let match;
   
@@ -72,7 +88,6 @@ export function parseOSData(text: string) {
     const qtdMO = parseInt(match[5]);
     const valorMO = parseFloat(match[6].replace(/\./g, '').replace(',', '.'));
 
-    // Só adiciona se tiver pelo menos uma quantidade válida
     if (!isNaN(qtdPeca) || !isNaN(qtdMO)) {
       data.itens.push({
         id: crypto.randomUUID(),
