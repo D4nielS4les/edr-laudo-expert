@@ -162,41 +162,41 @@ export function parseOSData(text: string) {
   ], oficinaSection);
 
   // --- CAPTURA DE ITENS DO ORÇAMENTO ---
-  // Log do texto completo para debug
-  console.log('[Parser] cleanText (primeiros 3000 chars):', cleanText.substring(0, 3000));
-
   // Isola a seção entre "Itens" e "Subtotais"
   const itensSectionMatch = cleanText.match(/\bItens\b([\s\S]+?)(?:\bSubtotais\b|\bTotais\b)/i);
   const itensText = itensSectionMatch?.[1] ?? "";
-  
-  console.log('[Parser] Seção de Itens isolada:', itensText.substring(0, 500));
 
   const parseDecimal = (value: string) => parseFloat(value.replace(/\./g, "").replace(",", "."));
 
   if (itensText) {
-    // Tenta match com palavras de ação (SUBSTITUIR etc)
-    const itemRowRegex = /(\d{8})\s+(.+?)\s+(?:SUBSTITUIR|REPARAR|TROCAR|REVISAR|AJUSTAR|INSTALAR|DESMONTAR|MONTAR|VERIFICAR|REGULAR)\s+(?:Em\s+orçamento|Pendente|Aprovado|Reprovado)\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})/gi;
+    // No PDF.js o texto vem SEM espaços entre código+grupo+descrição:
+    // "88331579EQUIPAMENTOSROLAMENTO SEM FIM SUBSTITUIR Em orçamento 1,00 47.000,00 10,00 2.250,00 49.250,00"
+    // Regex: 8 dígitos + letras coladas + texto até ação + status + 5 valores
+    const itemRowRegex = /(\d{8})([A-ZÀ-Ú]+)(.*?)\s+(?:SUBSTITUIR|REPARAR|TROCAR|REVISAR|AJUSTAR|INSTALAR|DESMONTAR|MONTAR|VERIFICAR|REGULAR)\s+(?:Em\s+orçamento|Pendente|Aprovado|Reprovado)\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})/gi;
     let itemMatch: RegExpExecArray | null;
 
     while ((itemMatch = itemRowRegex.exec(itensText)) !== null) {
+      const grupo = itemMatch[2].trim();
+      const resto = itemMatch[3].trim();
+      const descricao = `${grupo} ${resto}`.replace(/\s+/g, " ").trim();
+
       data.itens.push({
         id: crypto.randomUUID(),
         codigo: itemMatch[1],
-        descricao: itemMatch[2].replace(/\s+/g, " ").trim(),
-        qtdPeca: parseDecimal(itemMatch[3]),
-        valorPeca: parseDecimal(itemMatch[4]),
-        qtdMaoObra: parseDecimal(itemMatch[5]),
-        valorMaoObra: parseDecimal(itemMatch[6]),
-        valorTotal: parseDecimal(itemMatch[7]),
+        descricao,
+        qtdPeca: parseDecimal(itemMatch[4]),
+        valorPeca: parseDecimal(itemMatch[5]),
+        qtdMaoObra: parseDecimal(itemMatch[6]),
+        valorMaoObra: parseDecimal(itemMatch[7]),
+        valorTotal: parseDecimal(itemMatch[8]),
         status: 'pendente',
         justificativa: ''
       });
     }
 
-    // Fallback: busca código + valores sem exigir palavra de ação
+    // Fallback: código(8dig) colado com texto + 5 valores
     if (data.itens.length === 0) {
-      console.log('[Parser] Fallback: buscando código + 5 valores');
-      const codes = [...itensText.matchAll(/\b(\d{8})\b/g)];
+      const codes = [...itensText.matchAll(/(\d{8})/g)];
       for (const codeMatch of codes) {
         const afterCode = itensText.substring(codeMatch.index! + 8);
         const nums = [...afterCode.matchAll(/(\d{1,3}(?:\.\d{3})*,\d{2})/g)];
@@ -221,8 +221,6 @@ export function parseOSData(text: string) {
       }
     }
   }
-
-  console.log('[Parser] Itens encontrados:', data.itens.length);
 
   return data;
 }
