@@ -40,10 +40,8 @@ export function parseOSData(text: string) {
     itens: []
   };
 
-  // Limpeza básica do texto para facilitar a busca
   const cleanText = text.replace(/\s+/g, ' ');
 
-  // Função auxiliar para extração segura
   const extract = (regex: RegExp) => {
     const match = cleanText.match(regex);
     return match ? match[1].trim() : "";
@@ -52,20 +50,23 @@ export function parseOSData(text: string) {
   // --- CAPTURA DE DADOS GERAIS ---
   data.ordemServico = extract(/(?:Ordem de Serviço|OS|Nº OS)[:\s]+(\d+)/i);
   
-  // Dados do Cliente
+  // Dados do Cliente - Ajustado para o padrão "Cliente - ID: NOME - DEPARTAMENTO"
+  const clienteMatch = cleanText.match(/Cliente.*?:\s*([^-\n]+?)\s*-/i);
+  if (clienteMatch) {
+    data.dadosCliente.clienteFinal = clienteMatch[1].trim();
+  } else {
+    data.dadosCliente.clienteFinal = extract(/(?:Cliente|Cliente Final)[:\s]+([^|]+?)(?=\s(?:Solicitante|Empresa|Veículo|$))/i);
+  }
+
   data.dadosCliente.solicitante = extract(/(?:Solicitante|Usuário)[:\s]+([^|]+?)(?=\s(?:Empresa|Cliente|Placa|$))/i);
-  data.dadosCliente.clienteFinal = extract(/(?:Cliente|Cliente Final)[:\s]+([^|]+?)(?=\s(?:Solicitante|Empresa|Veículo|$))/i);
   data.dadosCliente.empresa = extract(/(?:Empresa)[:\s]+([^|]+?)(?=\s(?:Cliente|Solicitante|Placa|$))/i);
 
   // Dados do Veículo
   data.dadosVeiculo.placa = extract(/(?:Placa)[:\s]+([A-Z]{3}[0-9][A-Z0-9][0-9]{2})/i);
   data.dadosVeiculo.chassi = extract(/(?:Chassi)[:\s]+([A-Z0-9]{17})/i);
   data.dadosVeiculo.marcaModelo = extract(/(?:Veículo|Modelo|Marca\/Modelo)[:\s]+([^|]+?)(?=\s(?:Ano|Placa|Chassi|$))/i);
-  
-  // Hodômetro (Quilometragem)
   data.dadosVeiculo.hodometro = extract(/(?:Quilometragem|Km|Quilometragem Informada|Hodômetro)[:\s]+([\d.]+)/i);
 
-  // Ano (Fabricação/Modelo) - Tenta padrões como "2015/2016" ou "Ano: 2015"
   const anoMatch = cleanText.match(/(?:Ano|Ano Fab\/Mod)[:\s]+(\d{4})(?:\/(\d{4}))?/i);
   if (anoMatch) {
     data.dadosVeiculo.anoFabricacao = anoMatch[1];
