@@ -6,15 +6,15 @@ import { AlertTriangle } from "lucide-react";
 import { useLaudo } from "@/contexts/LaudoContext";
 import { cn } from "@/lib/utils";
 
-const campos = [
-  { key: "nome" as const, label: "Nome da Oficina", placeholder: "Ex: ATIVA CAR" },
-  { key: "cnpj" as const, label: "CNPJ", placeholder: "22.740.348/0001-58" },
-  { key: "endereco" as const, label: "Endereço", placeholder: "Avenida Radialista João Ramos, Nº 1581", colSpan: true },
-  { key: "bairro" as const, label: "Bairro", placeholder: "Cidade Nova" },
-  { key: "cidade" as const, label: "Cidade / UF", placeholder: "Maracanaú - CE" },
-  { key: "telefone" as const, label: "Telefone", placeholder: "(85) 98632-2032" },
-  { key: "responsavel" as const, label: "Responsável", placeholder: "Sr. Edson" },
-] as const;
+const campos: { key: keyof typeof import("@/types/laudo").DadosOficina extends never ? never : "nome" | "cnpj" | "endereco" | "bairro" | "cidade" | "telefone" | "responsavel"; label: string; placeholder: string; colSpan?: boolean }[] = [
+  { key: "nome", label: "Nome da Oficina", placeholder: "Ex: ATIVA CAR" },
+  { key: "cnpj", label: "CNPJ", placeholder: "22.740.348/0001-58" },
+  { key: "endereco", label: "Endereço", placeholder: "Avenida Radialista João Ramos, Nº 1581", colSpan: true },
+  { key: "bairro", label: "Bairro", placeholder: "Cidade Nova" },
+  { key: "cidade", label: "Cidade / UF", placeholder: "Maracanaú - CE" },
+  { key: "telefone", label: "Telefone", placeholder: "(85) 98632-2032" },
+  { key: "responsavel", label: "Responsável", placeholder: "Sr. Edson" },
+];
 
 export function TabOficina() {
   const { laudo, updateOficina } = useLaudo();
