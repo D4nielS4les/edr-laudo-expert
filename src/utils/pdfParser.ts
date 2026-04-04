@@ -42,9 +42,19 @@ export function parseOSData(text: string) {
 
   const cleanText = text.replace(/\s+/g, ' ');
 
-  const extract = (regex: RegExp) => {
-    const match = cleanText.match(regex);
+  const extract = (regex: RegExp, source = cleanText) => {
+    const match = source.match(regex);
     return match ? match[1].trim() : "";
+  };
+
+  const cleanField = (value: string) => value.replace(/\s+/g, ' ').replace(/\s+,/g, ',').trim();
+
+  const extractFromPatterns = (patterns: RegExp[], source = cleanText) => {
+    for (const pattern of patterns) {
+      const value = extract(pattern, source);
+      if (value) return cleanField(value);
+    }
+    return "";
   };
 
   // --- CAPTURA DE DADOS GERAIS ---
@@ -85,13 +95,38 @@ export function parseOSData(text: string) {
   }
 
   // Dados da Oficina
-  data.dadosOficina.nome = extract(/(?:Nome|Oficina|Estabelecimento|Prestador)[:\s]+([^\n|]+?)(?=\s*(?:CNPJ|Endereço|Logradouro|Fone|$))/i);
-  data.dadosOficina.cnpj = extract(/(?:CNPJ)[:\s]+(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/i);
-  data.dadosOficina.endereco = extract(/(?:Logradouro\/Número|Logradouro|Endereço)[:\s]+([^\n|]+?)(?=\s*(?:Bairro|Cidade|CEP|Fone|CNPJ|$))/i);
-  data.dadosOficina.bairro = extract(/(?:Bairro)[:\s]+([^\n|]+?)(?=\s*(?:Cidade|CEP|Fone|UF|$))/i);
-  data.dadosOficina.cidade = extract(/(?:Cidade)[:\s]+([^\n|]+?)(?=\s*(?:UF|CEP|Fone|Bairro|Estado|$))/i);
-  data.dadosOficina.telefone = extract(/(?:Fones?|Telefone)[:\s]+([\d\(\)\s\-]+)/i);
-  data.dadosOficina.responsavel = extract(/(?:Responsável pelo Orçamento|Responsável|Resp\.?\s*Orçamento)[:\s]+([^\n|]+?)(?=\s*(?:Data|Fone|CNPJ|$))/i);
+  const oficinaSection = extract(/(?:Estabelecimento|Oficina)(.*?)(?=\s(?:Veículo|Consulta de Ordem de Serviço|Visualização Ordem de Serviço|Itens|Fotos|Vídeos|Anexos|Fórum|Alertas|$))/i, cleanText);
+
+  data.dadosOficina.nome = extractFromPatterns([
+    /(?:Nome)[:\s]+([^\n|]+?)(?=\s*(?:CNPJ|Logradouro|Endereço|Bairro|Cidade|Fones?|Telefone|Responsável|$))/i,
+    /(?:Nome)\s+([^\n|]+?)(?=\s*(?:CNPJ|Logradouro|Endereço|Bairro|Cidade|Fones?|Telefone|Responsável|$))/i,
+  ], oficinaSection || cleanText);
+
+  data.dadosOficina.cnpj = extractFromPatterns([
+    /(?:CNPJ)[:\s]+(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/i,
+  ], oficinaSection || cleanText);
+
+  data.dadosOficina.endereco = extractFromPatterns([
+    /(?:Logradouro\/Número|Logradouro|Endereço)[:\s]+([^\n|]+?)(?=\s*(?:Complemento|Bairro|Cidade|CEP|Fones?|Telefone|CNPJ|Responsável|$))/i,
+  ], oficinaSection || cleanText);
+
+  data.dadosOficina.bairro = extractFromPatterns([
+    /(?:Bairro)[:\s]+([^\n|]+?)(?=\s*(?:Cidade|CEP|Fones?|Telefone|UF|Responsável|$))/i,
+  ], oficinaSection || cleanText);
+
+  const cidadeBase = extractFromPatterns([
+    /(?:Cidade)[:\s]+([^\n|]+?)(?=\s*(?:CEP|Fones?|Telefone|Responsável|$))/i,
+  ], oficinaSection || cleanText);
+  const uf = extractFromPatterns([/(?:UF|Estado)[:\s]+([A-Z]{2})/i], oficinaSection || cleanText);
+  data.dadosOficina.cidade = cidadeBase && uf && !cidadeBase.includes(' - ') ? `${cidadeBase} - ${uf}` : cidadeBase;
+
+  data.dadosOficina.telefone = extractFromPatterns([
+    /(?:Fones?|Telefone)[:\s]+([\d\(\)\s\-]+)/i,
+  ], oficinaSection || cleanText);
+
+  data.dadosOficina.responsavel = extractFromPatterns([
+    /(?:Responsável pelo Orçamento|Responsável)[:\s]+([^\n|]+?)(?=\s*(?:Data|Fones?|Telefone|CNPJ|$))/i,
+  ], oficinaSection || cleanText);
 
   // --- CAPTURA DE ITENS DO ORÇAMENTO ---
   const itemRegex = /(\d{8})\s+([A-Z0-9\s\-\.\/]{3,60}?)\s+(\d+)\s+([\d,.]+)\s+(\d+)\s+([\d,.]+)/gi;
