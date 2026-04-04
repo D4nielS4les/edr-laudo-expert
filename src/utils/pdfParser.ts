@@ -213,14 +213,18 @@ export function parseOSData(text: string) {
           const desc = afterCode.substring(0, firstNumPos).replace(/\s+/g, ' ')
             .replace(/\b(?:SUBSTITUIR|REPARAR|TROCAR|Em\s+orçamento|Pendente|Aprovado|Reprovado)\b/gi, '')
             .trim();
+          const fbQtdPeca = parseDecimal(nums[0][1]);
+          const fbValPecaTotal = parseDecimal(nums[1][1]);
+          const fbQtdMO = parseDecimal(nums[2][1]);
+          const fbValMOTotal = parseDecimal(nums[3][1]);
           data.itens.push({
             id: crypto.randomUUID(),
             codigo: codeMatch[1],
             descricao: desc,
-            qtdPeca: parseDecimal(nums[0][1]),
-            valorPeca: parseDecimal(nums[1][1]),
-            qtdMaoObra: parseDecimal(nums[2][1]),
-            valorMaoObra: parseDecimal(nums[3][1]),
+            qtdPeca: fbQtdPeca,
+            valorPeca: fbQtdPeca > 0 ? fbValPecaTotal / fbQtdPeca : fbValPecaTotal,
+            qtdMaoObra: fbQtdMO,
+            valorMaoObra: fbQtdMO > 0 ? fbValMOTotal / fbQtdMO : fbValMOTotal,
             valorTotal: parseDecimal(nums[4][1]),
             status: 'pendente',
             justificativa: ''
