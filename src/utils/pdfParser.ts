@@ -162,40 +162,67 @@ export function parseOSData(text: string) {
   ], oficinaSection);
 
   // --- CAPTURA DE ITENS DO ORÇAMENTO ---
-  const itensSectionMatch = cleanText.match(
-    /Itens\s+Código\s+Grupo\s+de\s+Peça\s+Peça\s+Mão\s+de\s+Obra\s+Status\s+Peça\s+Qtd\s+Valor\s+Mão\s+de\s+Obra\s+Qtd\s+Valor\s+Valor\s+Total\s+(.+?)(?=\s+Subtotais\b|\s+Totais\b|\s+Total\b|$)/i,
-  );
+  // Log do texto completo para debug
+  console.log('[Parser] cleanText (primeiros 3000 chars):', cleanText.substring(0, 3000));
 
+  // Isola a seção entre "Itens" e "Subtotais"
+  const itensSectionMatch = cleanText.match(/\bItens\b([\s\S]+?)(?:\bSubtotais\b|\bTotais\b)/i);
   const itensText = itensSectionMatch?.[1] ?? "";
+  
+  console.log('[Parser] Seção de Itens isolada:', itensText.substring(0, 500));
+
   const parseDecimal = (value: string) => parseFloat(value.replace(/\./g, "").replace(",", "."));
 
   if (itensText) {
-    const itemRowRegex = /(\d{8})\s+(.+?)\s+(SUBSTITUIR|REPARAR|TROCAR|REVISAR|AJUSTAR|INSTALAR|DESMONTAR|MONTAR|VERIFICAR|REGULAR)\s+(Em\s+orçamento|Pendente|Aprovado|Reprovado)\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})/gi;
+    // Tenta match com palavras de ação (SUBSTITUIR etc)
+    const itemRowRegex = /(\d{8})\s+(.+?)\s+(?:SUBSTITUIR|REPARAR|TROCAR|REVISAR|AJUSTAR|INSTALAR|DESMONTAR|MONTAR|VERIFICAR|REGULAR)\s+(?:Em\s+orçamento|Pendente|Aprovado|Reprovado)\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})/gi;
     let itemMatch: RegExpExecArray | null;
 
     while ((itemMatch = itemRowRegex.exec(itensText)) !== null) {
-      const codigo = itemMatch[1];
-      const descricao = itemMatch[2].replace(/\s+/g, " ").trim();
-      const qtdPeca = parseDecimal(itemMatch[5]);
-      const valorPeca = parseDecimal(itemMatch[6]);
-      const qtdMaoObra = parseDecimal(itemMatch[7]);
-      const valorMaoObra = parseDecimal(itemMatch[8]);
-      const valorTotal = parseDecimal(itemMatch[9]);
-
       data.itens.push({
         id: crypto.randomUUID(),
-        codigo,
-        descricao,
-        qtdPeca: isNaN(qtdPeca) ? 0 : qtdPeca,
-        valorPeca: isNaN(valorPeca) ? 0 : valorPeca,
-        qtdMaoObra: isNaN(qtdMaoObra) ? 0 : qtdMaoObra,
-        valorMaoObra: isNaN(valorMaoObra) ? 0 : valorMaoObra,
-        valorTotal: isNaN(valorTotal) ? 0 : valorTotal,
+        codigo: itemMatch[1],
+        descricao: itemMatch[2].replace(/\s+/g, " ").trim(),
+        qtdPeca: parseDecimal(itemMatch[3]),
+        valorPeca: parseDecimal(itemMatch[4]),
+        qtdMaoObra: parseDecimal(itemMatch[5]),
+        valorMaoObra: parseDecimal(itemMatch[6]),
+        valorTotal: parseDecimal(itemMatch[7]),
         status: 'pendente',
         justificativa: ''
       });
     }
+
+    // Fallback: busca código + valores sem exigir palavra de ação
+    if (data.itens.length === 0) {
+      console.log('[Parser] Fallback: buscando código + 5 valores');
+      const codes = [...itensText.matchAll(/\b(\d{8})\b/g)];
+      for (const codeMatch of codes) {
+        const afterCode = itensText.substring(codeMatch.index! + 8);
+        const nums = [...afterCode.matchAll(/(\d{1,3}(?:\.\d{3})*,\d{2})/g)];
+        if (nums.length >= 5) {
+          const firstNumPos = nums[0].index!;
+          const desc = afterCode.substring(0, firstNumPos).replace(/\s+/g, ' ')
+            .replace(/\b(?:SUBSTITUIR|REPARAR|TROCAR|Em\s+orçamento|Pendente|Aprovado|Reprovado)\b/gi, '')
+            .trim();
+          data.itens.push({
+            id: crypto.randomUUID(),
+            codigo: codeMatch[1],
+            descricao: desc,
+            qtdPeca: parseDecimal(nums[0][1]),
+            valorPeca: parseDecimal(nums[1][1]),
+            qtdMaoObra: parseDecimal(nums[2][1]),
+            valorMaoObra: parseDecimal(nums[3][1]),
+            valorTotal: parseDecimal(nums[4][1]),
+            status: 'pendente',
+            justificativa: ''
+          });
+        }
+      }
+    }
   }
+
+  console.log('[Parser] Itens encontrados:', data.itens.length);
 
   return data;
 }
