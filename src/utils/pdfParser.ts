@@ -162,8 +162,64 @@ export function parseOSData(text: string) {
   ], oficinaSection);
 
   // --- CAPTURA DE ITENS DO ORÇAMENTO ---
-  // Formato: Código(8dig) GrupoPeça Descrição MãoDeObra Status PeçaQtd PeçaValor MOQtd MOValor ValorTotal
-  const itemRegex = /(\d{8})\s+([A-ZÀ-Ú\s]+?)\s+((?:[A-ZÀ-Ú][A-ZÀ-Ú\s\/\-\.]+?)+?)\s+(?:SUBSTITUIR|REPARAR|TROCAR|REVISAR|AJUSTAR|INSTALAR|DESMONTAR|MONTAR|VERIFICAR|REGULAR)\s+(?:Em orçamento|Pendente|Aprovado|Reprovado)\s+([\d]+[,.][\d]+)\s+([\d.,]+)\s+([\d]+[,.][\d]+)\s+([\d.,]+)\s+([\d.,]+)/gi;
+  // Formato: Código(8dig) ... textos ... PeçaQtd PeçaValor MOQtd MOValor ValorTotal
+  const itemRegex = /(\d{8})\s+(.*?)\s+(?:SUBSTITUIR|REPARAR|TROCAR|REVISAR|AJUSTAR|INSTALAR|DESMONTAR|MONTAR|VERIFICAR|REGULAR)\s+(?:Em\s+orçamento|Pendente|Aprovado|Reprovado)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)/gi;
+  let match;
+  
+  while ((match = itemRegex.exec(cleanText)) !== null) {
+    const codigo = match[1];
+    const descricao = match[2].replace(/\s+/g, ' ').trim();
+    const qtdPeca = parseFloat(match[3].replace(/\./g, '').replace(',', '.'));
+    const valorPeca = parseFloat(match[4].replace(/\./g, '').replace(',', '.'));
+    const qtdMO = parseFloat(match[5].replace(/\./g, '').replace(',', '.'));
+    const valorMO = parseFloat(match[6].replace(/\./g, '').replace(',', '.'));
+    const valorTotal = parseFloat(match[7].replace(/\./g, '').replace(',', '.'));
+
+    data.itens.push({
+      id: crypto.randomUUID(),
+      codigo,
+      descricao,
+      qtdPeca: isNaN(qtdPeca) ? 0 : qtdPeca,
+      valorPeca: isNaN(valorPeca) ? 0 : valorPeca,
+      qtdMaoObra: isNaN(qtdMO) ? 0 : qtdMO,
+      valorMaoObra: isNaN(valorMO) ? 0 : valorMO,
+      valorTotal: isNaN(valorTotal) ? 0 : valorTotal,
+      status: 'pendente',
+      justificativa: ''
+    });
+  }
+
+  // Fallback: código(8dig) + texto + 5 valores numéricos consecutivos
+  if (data.itens.length === 0) {
+    const simpleRegex = /(\d{8})\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)/g;
+    while ((match = simpleRegex.exec(cleanText)) !== null) {
+      const codigo = match[1];
+      const descricao = match[2].replace(/\s+/g, ' ').replace(/(?:SUBSTITUIR|REPARAR|TROCAR|Em\s+orçamento|Pendente|Aprovado|Reprovado)\s*/gi, '').trim();
+      const qtdPeca = parseFloat(match[3].replace(/\./g, '').replace(',', '.'));
+      const valorPeca = parseFloat(match[4].replace(/\./g, '').replace(',', '.'));
+      const qtdMO = parseFloat(match[5].replace(/\./g, '').replace(',', '.'));
+      const valorMO = parseFloat(match[6].replace(/\./g, '').replace(',', '.'));
+      const valorTotal = parseFloat(match[7].replace(/\./g, '').replace(',', '.'));
+
+      data.itens.push({
+        id: crypto.randomUUID(),
+        codigo,
+        descricao,
+        qtdPeca: isNaN(qtdPeca) ? 0 : qtdPeca,
+        valorPeca: isNaN(valorPeca) ? 0 : valorPeca,
+        qtdMaoObra: isNaN(qtdMO) ? 0 : qtdMO,
+        valorMaoObra: isNaN(valorMO) ? 0 : valorMO,
+        valorTotal: isNaN(valorTotal) ? 0 : valorTotal,
+        status: 'pendente',
+        justificativa: ''
+      });
+    }
+  }
+
+  console.log('[Parser] Itens encontrados:', data.itens.length, data.itens);
+
+  return data;
+}
   let match;
   
   while ((match = itemRegex.exec(cleanText)) !== null) {
