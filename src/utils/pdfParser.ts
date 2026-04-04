@@ -85,8 +85,13 @@ export function parseOSData(text: string) {
   }
 
   // Dados da Oficina
-  data.dadosOficina.nome = extract(/(?:Oficina|Estabelecimento|Prestador)[:\s]+([^|]+?)(?=\s(?:Endereço|CNPJ|$))/i);
-  data.dadosOficina.cnpj = extract(/(?:CNPJ)[:\s]+(\d{2}\.\d.3\.\d{3}\/\d{4}-\d{2})/i);
+  data.dadosOficina.nome = extract(/(?:Nome|Oficina|Estabelecimento|Prestador)[:\s]+([^\n|]+?)(?=\s*(?:CNPJ|Endereço|Logradouro|Fone|$))/i);
+  data.dadosOficina.cnpj = extract(/(?:CNPJ)[:\s]+(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/i);
+  data.dadosOficina.endereco = extract(/(?:Logradouro\/Número|Logradouro|Endereço)[:\s]+([^\n|]+?)(?=\s*(?:Bairro|Cidade|CEP|Fone|CNPJ|$))/i);
+  data.dadosOficina.bairro = extract(/(?:Bairro)[:\s]+([^\n|]+?)(?=\s*(?:Cidade|CEP|Fone|UF|$))/i);
+  data.dadosOficina.cidade = extract(/(?:Cidade)[:\s]+([^\n|]+?)(?=\s*(?:UF|CEP|Fone|Bairro|Estado|$))/i);
+  data.dadosOficina.telefone = extract(/(?:Fones?|Telefone)[:\s]+([\d\(\)\s\-]+)/i);
+  data.dadosOficina.responsavel = extract(/(?:Responsável pelo Orçamento|Responsável|Resp\.?\s*Orçamento)[:\s]+([^\n|]+?)(?=\s*(?:Data|Fone|CNPJ|$))/i);
 
   // --- CAPTURA DE ITENS DO ORÇAMENTO ---
   const itemRegex = /(\d{8})\s+([A-Z0-9\s\-\.\/]{3,60}?)\s+(\d+)\s+([\d,.]+)\s+(\d+)\s+([\d,.]+)/gi;
