@@ -1,7 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { LaudoPericial } from "@/types/laudo";
-
+import edrLogoUrl from "@/assets/edr-logo.png";
 
 const NAVY: [number, number, number] = [27, 42, 74];    // #1B2A4A
 const BLUE: [number, number, number] = [51, 102, 153];  // accent
