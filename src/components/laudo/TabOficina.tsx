@@ -6,7 +6,7 @@ import { AlertTriangle } from "lucide-react";
 import { useLaudo } from "@/contexts/LaudoContext";
 import { cn } from "@/lib/utils";
 
-const campos: { key: keyof typeof import("@/types/laudo").DadosOficina extends never ? never : "nome" | "cnpj" | "endereco" | "bairro" | "cidade" | "telefone" | "responsavel"; label: string; placeholder: string; colSpan?: boolean }[] = [
+const campos: { key: "nome" | "cnpj" | "endereco" | "bairro" | "cidade" | "telefone" | "responsavel"; label: string; placeholder: string; colSpan?: boolean }[] = [
   { key: "nome", label: "Nome da Oficina", placeholder: "Ex: ATIVA CAR" },
   { key: "cnpj", label: "CNPJ", placeholder: "22.740.348/0001-58" },
   { key: "endereco", label: "Endereço", placeholder: "Avenida Radialista João Ramos, Nº 1581", colSpan: true },
