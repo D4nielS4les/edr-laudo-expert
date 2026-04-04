@@ -162,12 +162,17 @@ export function parseOSData(text: string) {
   ], oficinaSection);
 
   // --- CAPTURA DE ITENS DO ORÇAMENTO ---
-  // Formato: Código(8dig) ... textos ... PeçaQtd PeçaValor MOQtd MOValor ValorTotal
+  // Busca a seção de itens (após "Código" ou "Itens")
+  const itensSection = cleanText.match(/(?:Código\s+Grupo\s+de\s+Peça|Itens\s+Código)(.+?)(?:Subtotais|Totais|Total\s)/i);
+  const itensText = itensSection ? itensSection[1] : cleanText;
+
+  // Formato: Código(8dig) Descrição SUBSTITUIR/etc Em orçamento/etc Qtd Valor Qtd Valor ValorTotal
   const itemRegex = /(\d{8})\s+(.*?)\s+(?:SUBSTITUIR|REPARAR|TROCAR|REVISAR|AJUSTAR|INSTALAR|DESMONTAR|MONTAR|VERIFICAR|REGULAR)\s+(?:Em\s+orçamento|Pendente|Aprovado|Reprovado)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)/gi;
   let match;
   
-  while ((match = itemRegex.exec(cleanText)) !== null) {
+  while ((match = itemRegex.exec(itensText)) !== null) {
     const codigo = match[1];
+    if (codigo === data.ordemServico) continue; // Ignora número da OS
     const descricao = match[2].replace(/\s+/g, ' ').trim();
     const qtdPeca = parseFloat(match[3].replace(/\./g, '').replace(',', '.'));
     const valorPeca = parseFloat(match[4].replace(/\./g, '').replace(',', '.'));
@@ -192,8 +197,9 @@ export function parseOSData(text: string) {
   // Fallback: código(8dig) + texto + 5 valores numéricos consecutivos
   if (data.itens.length === 0) {
     const simpleRegex = /(\d{8})\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)/g;
-    while ((match = simpleRegex.exec(cleanText)) !== null) {
+    while ((match = simpleRegex.exec(itensText)) !== null) {
       const codigo = match[1];
+      if (codigo === data.ordemServico) continue;
       const descricao = match[2].replace(/\s+/g, ' ').replace(/(?:SUBSTITUIR|REPARAR|TROCAR|Em\s+orçamento|Pendente|Aprovado|Reprovado)\s*/gi, '').trim();
       const qtdPeca = parseFloat(match[3].replace(/\./g, '').replace(',', '.'));
       const valorPeca = parseFloat(match[4].replace(/\./g, '').replace(',', '.'));
