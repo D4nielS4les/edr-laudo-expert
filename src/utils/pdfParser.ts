@@ -110,10 +110,11 @@ export function parseOSData(text: string) {
   ], oficinaSection);
 
   data.dadosOficina.bairro = extractFromPatterns([
-    /(?:Bairro)[:\s]+([^\n|]+?)(?=\s*(?:Cidade|CEP|Fones?|Telefone|UF|Responsável|$))/i,
+    /(?:Bairro)[:\s]+([^\n|]+?)(?=\s*(?:Cidade\s*\/\s*UF|Cidade|CEP|Fones?|Telefone|UF|Responsável|Taxa\(%\)|$))/i,
   ], oficinaSection);
 
   const cidadeBase = extractFromPatterns([
+    /(?:Cidade\s*\/\s*UF)[:\s]+([^\n|]+?)(?=\s*(?:CEP|Fones?|Telefone|Responsável|$))/i,
     /(?:\bCidade)\s*[:\-]\s*([^\n|]+?)(?=\s*(?:UF|CEP|Fones?|Telefone|Responsável|$))/i,
   ], oficinaSection);
   const uf = extractFromPatterns([/(?:UF|Estado)[:\s]+([A-Z]{2})/i], oficinaSection);
