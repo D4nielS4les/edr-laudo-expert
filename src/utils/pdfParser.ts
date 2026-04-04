@@ -114,7 +114,7 @@ export function parseOSData(text: string) {
   ], oficinaSection);
 
   const cidadeBase = extractFromPatterns([
-    /(?:Cidade)[:\s]+([^\n|]+?)(?=\s*(?:UF|CEP|Fones?|Telefone|Responsável|$))/i,
+    /(?:\bCidade)\s*[:\-]\s*([^\n|]+?)(?=\s*(?:UF|CEP|Fones?|Telefone|Responsável|$))/i,
   ], oficinaSection);
   const uf = extractFromPatterns([/(?:UF|Estado)[:\s]+([A-Z]{2})/i], oficinaSection);
   data.dadosOficina.cidade = cidadeBase && uf && !cidadeBase.includes(' - ') ? `${cidadeBase} - ${uf}` : cidadeBase;
