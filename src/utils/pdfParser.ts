@@ -58,7 +58,9 @@ export function parseOSData(text: string) {
     data.dadosCliente.clienteFinal = extract(/(?:Cliente|Cliente Final)[:\s]+([^|]+?)(?=\s(?:Solicitante|Empresa|Veículo|$))/i);
   }
 
-  data.dadosCliente.solicitante = extract(/(?:Solicitante|Usuário)[:\s]+([^|]+?)(?=\s(?:Empresa|Cliente|Placa|$))/i);
+  // Solicitante: Captura tudo após ":" até o próximo campo conhecido
+  data.dadosCliente.solicitante = extract(/(?:Solicitante|Usuário)[:\s]+(.*?)(?=\s(?:Empresa|Cliente|Placa|Veículo|Data|CPF|CNPJ|$))/i);
+  
   data.dadosCliente.empresa = extract(/(?:Empresa)[:\s]+([^|]+?)(?=\s(?:Cliente|Solicitante|Placa|$))/i);
 
   // Dados do Veículo
