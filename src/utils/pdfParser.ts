@@ -180,14 +180,22 @@ export function parseOSData(text: string) {
       const resto = itemMatch[3].trim();
       const descricao = `${grupo} ${resto}`.replace(/\s+/g, " ").trim();
 
+      const qtdPeca = parseDecimal(itemMatch[4]);
+      const valorPecaTotal = parseDecimal(itemMatch[5]);
+      const qtdMO = parseDecimal(itemMatch[6]);
+      const valorMOTotal = parseDecimal(itemMatch[7]);
+      // PDF mostra valor TOTAL (já multiplicado), app multiplica qty*valor, então dividimos
+      const valorPecaUnit = qtdPeca > 0 ? valorPecaTotal / qtdPeca : valorPecaTotal;
+      const valorMOUnit = qtdMO > 0 ? valorMOTotal / qtdMO : valorMOTotal;
+
       data.itens.push({
         id: crypto.randomUUID(),
         codigo: itemMatch[1],
         descricao,
-        qtdPeca: parseDecimal(itemMatch[4]),
-        valorPeca: parseDecimal(itemMatch[5]),
-        qtdMaoObra: parseDecimal(itemMatch[6]),
-        valorMaoObra: parseDecimal(itemMatch[7]),
+        qtdPeca,
+        valorPeca: valorPecaUnit,
+        qtdMaoObra: qtdMO,
+        valorMaoObra: valorMOUnit,
         valorTotal: parseDecimal(itemMatch[8]),
         status: 'pendente',
         justificativa: ''
@@ -205,14 +213,18 @@ export function parseOSData(text: string) {
           const desc = afterCode.substring(0, firstNumPos).replace(/\s+/g, ' ')
             .replace(/\b(?:SUBSTITUIR|REPARAR|TROCAR|Em\s+orçamento|Pendente|Aprovado|Reprovado)\b/gi, '')
             .trim();
+          const fbQtdPeca = parseDecimal(nums[0][1]);
+          const fbValPecaTotal = parseDecimal(nums[1][1]);
+          const fbQtdMO = parseDecimal(nums[2][1]);
+          const fbValMOTotal = parseDecimal(nums[3][1]);
           data.itens.push({
             id: crypto.randomUUID(),
             codigo: codeMatch[1],
             descricao: desc,
-            qtdPeca: parseDecimal(nums[0][1]),
-            valorPeca: parseDecimal(nums[1][1]),
-            qtdMaoObra: parseDecimal(nums[2][1]),
-            valorMaoObra: parseDecimal(nums[3][1]),
+            qtdPeca: fbQtdPeca,
+            valorPeca: fbQtdPeca > 0 ? fbValPecaTotal / fbQtdPeca : fbValPecaTotal,
+            qtdMaoObra: fbQtdMO,
+            valorMaoObra: fbQtdMO > 0 ? fbValMOTotal / fbQtdMO : fbValMOTotal,
             valorTotal: parseDecimal(nums[4][1]),
             status: 'pendente',
             justificativa: ''
