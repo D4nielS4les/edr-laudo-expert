@@ -66,7 +66,14 @@ export function parseOSData(text: string) {
   // Dados do Veículo
   data.dadosVeiculo.placa = extract(/(?:Placa)[:\s]+([A-Z]{3}[0-9][A-Z0-9][0-9]{2})/i);
   data.dadosVeiculo.chassi = extract(/(?:Chassi)[:\s]+([A-Z0-9]{17})/i);
-  data.dadosVeiculo.marcaModelo = extract(/(?:Veículo|Modelo|Marca\/Modelo)[:\s]+([^|]+?)(?=\s(?:Ano|Placa|Chassi|$))/i);
+  
+  // Marca/Modelo: Busca o padrão "Veículo: PLACA - MODELO" e extrai apenas o MODELO
+  const modeloMatch = cleanText.match(/(?:Veículo|Modelo)[:\s]+[A-Z]{3}[0-9][A-Z0-9][0-9]{2}\s*-\s*([^|]+?)(?=\s(?:Consulta|Ano|Placa|Chassi|$))/i);
+  if (modeloMatch) {
+    data.dadosVeiculo.marcaModelo = modeloMatch[1].trim();
+  } else {
+    data.dadosVeiculo.marcaModelo = extract(/(?:Veículo|Modelo|Marca\/Modelo)[:\s]+([^|]+?)(?=\s(?:Ano|Placa|Chassi|$))/i);
+  }
   
   // Hodômetro: Captura o valor numérico após "Quilometragem Informada no AutoAgendamento" ou similares
   data.dadosVeiculo.hodometro = extract(/(?:Quilometragem|Km|Quilometragem Informada|Hodômetro).*?[:\s]+([\d.]+)/i);
@@ -79,7 +86,7 @@ export function parseOSData(text: string) {
 
   // Dados da Oficina
   data.dadosOficina.nome = extract(/(?:Oficina|Estabelecimento|Prestador)[:\s]+([^|]+?)(?=\s(?:Endereço|CNPJ|$))/i);
-  data.dadosOficina.cnpj = extract(/(?:CNPJ)[:\s]+(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/i);
+  data.dadosOficina.cnpj = extract(/(?:CNPJ)[:\s]+(\d{2}\.\d.3\.\d{3}\/\d{4}-\d{2})/i);
 
   // --- CAPTURA DE ITENS DO ORÇAMENTO ---
   const itemRegex = /(\d{8})\s+([A-Z0-9\s\-\.\/]{3,60}?)\s+(\d+)\s+([\d,.]+)\s+(\d+)\s+([\d,.]+)/gi;
