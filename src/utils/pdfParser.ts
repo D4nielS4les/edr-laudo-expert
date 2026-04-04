@@ -71,20 +71,26 @@ export function parseOSData(text: string) {
       /\bCidade\s*[:\s-]+([^|]+?)(?=\s*(?:CEP|Fones?|Telefone|Responsável|Taxa|$))/i,
     ], source);
 
+    const stripLabel = (v: string) => v.replace(/^(?:Cidade\s*\/?\s*UF|Cidade|Bairro|CEP|Complemento)\s*/i, '').trim();
+
     if (cidadeDireta) {
-      const cidadeComUf = cidadeDireta.match(/([A-ZÀ-Ú][A-ZÀ-Ú\s]+?)\s*-\s*([A-Z]{2})/i);
+      const cleaned = stripLabel(cidadeDireta);
+      const cidadeComUf = cleaned.match(/([A-ZÀ-Ú][A-ZÀ-Ú\s]+?)\s*-\s*([A-Z]{2})/i);
       if (cidadeComUf) {
-        return cleanField(`${cidadeComUf[1]} - ${cidadeComUf[2]}`);
+        return cleanField(`${cidadeComUf[1].trim()} - ${cidadeComUf[2]}`);
       }
     }
 
     const cidadePorTrecho = source.match(/(?:Bairro|Cidade\s*\/\s*UF|Cidade|CEP|Taxa\(%\)|Complemento)\s*[:\s-]*.*?\b([A-ZÀ-Ú][A-ZÀ-Ú\s]+\s*-\s*[A-Z]{2})\b/i);
     if (cidadePorTrecho) {
-      return cleanField(cidadePorTrecho[1]);
+      return cleanField(stripLabel(cidadePorTrecho[1]));
     }
 
     const cidadeGenerica = source.match(/\b([A-ZÀ-Ú][A-ZÀ-Ú\s]{2,}\s*-\s*[A-Z]{2})\b/i);
-    return cidadeGenerica ? cleanField(cidadeGenerica[1]) : "";
+    if (cidadeGenerica) {
+      return cleanField(stripLabel(cidadeGenerica[1]));
+    }
+    return "";
   };
 
   // --- CAPTURA DE DADOS GERAIS ---
