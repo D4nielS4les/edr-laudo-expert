@@ -162,66 +162,40 @@ export function parseOSData(text: string) {
   ], oficinaSection);
 
   // --- CAPTURA DE ITENS DO ORÇAMENTO ---
-  // A seção de itens começa APÓS a palavra "Itens" no PDF
-  const itensIdx = cleanText.search(/\bItens\b/i);
-  const itensText = itensIdx >= 0 ? cleanText.substring(itensIdx) : "";
-  
-  console.log('[Parser] Seção de Itens encontrada:', itensIdx >= 0, itensText.substring(0, 500));
+  const itensSectionMatch = cleanText.match(
+    /Itens\s+Código\s+Grupo\s+de\s+Peça\s+Peça\s+Mão\s+de\s+Obra\s+Status\s+Peça\s+Qtd\s+Valor\s+Mão\s+de\s+Obra\s+Qtd\s+Valor\s+Valor\s+Total\s+(.+?)(?=\s+Subtotais\b|\s+Totais\b|\s+Total\b|$)/i,
+  );
+
+  const itensText = itensSectionMatch?.[1] ?? "";
+  const parseDecimal = (value: string) => parseFloat(value.replace(/\./g, "").replace(",", "."));
 
   if (itensText) {
-    const codigoRegex = /\b(\d{8})\b/g;
-    let match;
-    const codigosEncontrados: { codigo: string; index: number }[] = [];
-    
-    while ((match = codigoRegex.exec(itensText)) !== null) {
-      const cod = match[1];
-      if (cod === data.ordemServico) continue;
-      if (codigosEncontrados.some(c => c.codigo === cod)) continue;
-      codigosEncontrados.push({ codigo: cod, index: match.index });
-    }
-    
-    console.log('[Parser] Códigos encontrados na seção Itens:', codigosEncontrados.map(c => c.codigo));
+    const itemRowRegex = /(\d{8})\s+(.+?)\s+(SUBSTITUIR|REPARAR|TROCAR|REVISAR|AJUSTAR|INSTALAR|DESMONTAR|MONTAR|VERIFICAR|REGULAR)\s+(Em\s+orçamento|Pendente|Aprovado|Reprovado)\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})\s+(\d{1,3}(?:\.\d{3})*,\d{2})/gi;
+    let itemMatch: RegExpExecArray | null;
 
-    for (const { codigo, index } of codigosEncontrados) {
-      const afterCode = itensText.substring(index + 8);
-      
-      // Extrai valores numéricos no formato XX.XXX,XX ou X.XXX,XX ou XXX,XX
-      const numeros = afterCode.match(/\d{1,3}(?:\.\d{3})*,\d{2}/g);
-      
-      if (numeros && numeros.length >= 5) {
-        const parseNum = (s: string) => parseFloat(s.replace(/\./g, '').replace(',', '.'));
-        const qtdPeca = parseNum(numeros[0]);
-        const valorPeca = parseNum(numeros[1]);
-        const qtdMO = parseNum(numeros[2]);
-        const valorMO = parseNum(numeros[3]);
-        const valorTotal = parseNum(numeros[4]);
-        
-        // Descrição: texto entre o código e o primeiro número
-        const firstNumIdx = afterCode.indexOf(numeros[0]);
-        let descricao = afterCode.substring(0, firstNumIdx).replace(/\s+/g, ' ').trim();
-        descricao = descricao
-          .replace(/\b(?:SUBSTITUIR|REPARAR|TROCAR|REVISAR|AJUSTAR|INSTALAR|DESMONTAR|MONTAR|VERIFICAR|REGULAR)\b/gi, '')
-          .replace(/\b(?:Em\s+orçamento|Pendente|Aprovado|Reprovado)\b/gi, '')
-          .replace(/\s+/g, ' ')
-          .trim();
-        
-        data.itens.push({
-          id: crypto.randomUUID(),
-          codigo,
-          descricao,
-          qtdPeca: isNaN(qtdPeca) ? 0 : qtdPeca,
-          valorPeca: isNaN(valorPeca) ? 0 : valorPeca,
-          qtdMaoObra: isNaN(qtdMO) ? 0 : qtdMO,
-          valorMaoObra: isNaN(valorMO) ? 0 : valorMO,
-          valorTotal: isNaN(valorTotal) ? 0 : valorTotal,
-          status: 'pendente',
-          justificativa: ''
-        });
-      }
+    while ((itemMatch = itemRowRegex.exec(itensText)) !== null) {
+      const codigo = itemMatch[1];
+      const descricao = itemMatch[2].replace(/\s+/g, " ").trim();
+      const qtdPeca = parseDecimal(itemMatch[5]);
+      const valorPeca = parseDecimal(itemMatch[6]);
+      const qtdMaoObra = parseDecimal(itemMatch[7]);
+      const valorMaoObra = parseDecimal(itemMatch[8]);
+      const valorTotal = parseDecimal(itemMatch[9]);
+
+      data.itens.push({
+        id: crypto.randomUUID(),
+        codigo,
+        descricao,
+        qtdPeca: isNaN(qtdPeca) ? 0 : qtdPeca,
+        valorPeca: isNaN(valorPeca) ? 0 : valorPeca,
+        qtdMaoObra: isNaN(qtdMaoObra) ? 0 : qtdMaoObra,
+        valorMaoObra: isNaN(valorMaoObra) ? 0 : valorMaoObra,
+        valorTotal: isNaN(valorTotal) ? 0 : valorTotal,
+        status: 'pendente',
+        justificativa: ''
+      });
     }
   }
-
-  console.log('[Parser] Itens encontrados:', data.itens.length, data.itens);
 
   return data;
 }
