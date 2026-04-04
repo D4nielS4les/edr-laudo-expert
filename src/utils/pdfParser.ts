@@ -95,38 +95,37 @@ export function parseOSData(text: string) {
   }
 
   // Dados da Oficina
-  const oficinaSection = extract(/(?:Estabelecimento|Oficina)(.*?)(?=\s(?:Veículo|Consulta de Ordem de Serviço|Visualização Ordem de Serviço|Itens|Fotos|Vídeos|Anexos|Fórum|Alertas|$))/i, cleanText);
+  const oficinaSection = extract(/(?:Estabelecimento)(.*)$/i, cleanText) || cleanText;
 
   data.dadosOficina.nome = extractFromPatterns([
-    /(?:Nome)[:\s]+([^\n|]+?)(?=\s*(?:CNPJ|Logradouro|Endereço|Bairro|Cidade|Fones?|Telefone|Responsável|$))/i,
-    /(?:Nome)\s+([^\n|]+?)(?=\s*(?:CNPJ|Logradouro|Endereço|Bairro|Cidade|Fones?|Telefone|Responsável|$))/i,
-  ], oficinaSection || cleanText);
+    /(?:Estabelecimento\s+)?Nome[:\s]+([^\n|]+?)(?=\s*(?:CNPJ|Logradouro|Endereço|Bairro|Cidade|Fones?|Telefone|Responsável|$))/i,
+  ], oficinaSection);
 
   data.dadosOficina.cnpj = extractFromPatterns([
     /(?:CNPJ)[:\s]+(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/i,
-  ], oficinaSection || cleanText);
+  ], oficinaSection);
 
   data.dadosOficina.endereco = extractFromPatterns([
     /(?:Logradouro\/Número|Logradouro|Endereço)[:\s]+([^\n|]+?)(?=\s*(?:Complemento|Bairro|Cidade|CEP|Fones?|Telefone|CNPJ|Responsável|$))/i,
-  ], oficinaSection || cleanText);
+  ], oficinaSection);
 
   data.dadosOficina.bairro = extractFromPatterns([
     /(?:Bairro)[:\s]+([^\n|]+?)(?=\s*(?:Cidade|CEP|Fones?|Telefone|UF|Responsável|$))/i,
-  ], oficinaSection || cleanText);
+  ], oficinaSection);
 
   const cidadeBase = extractFromPatterns([
-    /(?:Cidade)[:\s]+([^\n|]+?)(?=\s*(?:CEP|Fones?|Telefone|Responsável|$))/i,
-  ], oficinaSection || cleanText);
-  const uf = extractFromPatterns([/(?:UF|Estado)[:\s]+([A-Z]{2})/i], oficinaSection || cleanText);
+    /(?:\bCidade)\s*[:\-]\s*([^\n|]+?)(?=\s*(?:UF|CEP|Fones?|Telefone|Responsável|$))/i,
+  ], oficinaSection);
+  const uf = extractFromPatterns([/(?:UF|Estado)[:\s]+([A-Z]{2})/i], oficinaSection);
   data.dadosOficina.cidade = cidadeBase && uf && !cidadeBase.includes(' - ') ? `${cidadeBase} - ${uf}` : cidadeBase;
 
   data.dadosOficina.telefone = extractFromPatterns([
     /(?:Fones?|Telefone)[:\s]+([\d\(\)\s\-]+)/i,
-  ], oficinaSection || cleanText);
+  ], oficinaSection);
 
   data.dadosOficina.responsavel = extractFromPatterns([
     /(?:Responsável pelo Orçamento|Responsável)[:\s]+([^\n|]+?)(?=\s*(?:Data|Fones?|Telefone|CNPJ|$))/i,
-  ], oficinaSection || cleanText);
+  ], oficinaSection);
 
   // --- CAPTURA DE ITENS DO ORÇAMENTO ---
   const itemRegex = /(\d{8})\s+([A-Z0-9\s\-\.\/]{3,60}?)\s+(\d+)\s+([\d,.]+)\s+(\d+)\s+([\d,.]+)/gi;
