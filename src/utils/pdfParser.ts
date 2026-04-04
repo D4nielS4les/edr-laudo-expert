@@ -42,9 +42,19 @@ export function parseOSData(text: string) {
 
   const cleanText = text.replace(/\s+/g, ' ');
 
-  const extract = (regex: RegExp) => {
-    const match = cleanText.match(regex);
+  const extract = (regex: RegExp, source = cleanText) => {
+    const match = source.match(regex);
     return match ? match[1].trim() : "";
+  };
+
+  const cleanField = (value: string) => value.replace(/\s+/g, ' ').replace(/\s+,/g, ',').trim();
+
+  const extractFromPatterns = (patterns: RegExp[], source = cleanText) => {
+    for (const pattern of patterns) {
+      const value = extract(pattern, source);
+      if (value) return cleanField(value);
+    }
+    return "";
   };
 
   // --- CAPTURA DE DADOS GERAIS ---
