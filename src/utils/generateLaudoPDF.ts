@@ -81,9 +81,25 @@ function formatCurrency(val: number): string {
   return val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+async function loadLogoBase64(): Promise<string> {
+  const res = await fetch(edrLogoUrl);
+  const blob = await res.blob();
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.readAsDataURL(blob);
+  });
+}
+
 export async function generateLaudoPDF(laudo: LaudoPericial) {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   let pageNum = 1;
+
+  // Load logo
+  let logoBase64: string | null = null;
+  try {
+    logoBase64 = await loadLogoBase64();
+  } catch { /* fallback to text */ }
 
   // ===== COVER PAGE =====
   doc.setFillColor(...NAVY);
@@ -98,11 +114,17 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
   doc.setFillColor(...BLUE);
   doc.rect(boxX, boxY, boxW, 4, "F");
 
-  // Logo text
-  doc.setFontSize(28);
-  doc.setTextColor(...NAVY);
-  doc.setFont("helvetica", "bold");
-  doc.text("EDR", PAGE_W / 2, boxY + 25, { align: "center" });
+  // Logo image or text fallback
+  if (logoBase64) {
+    const logoW = 60;
+    const logoH = logoW * (512 / 800); // maintain aspect ratio
+    doc.addImage(logoBase64, "PNG", PAGE_W / 2 - logoW / 2, boxY + 8, logoW, logoH);
+  } else {
+    doc.setFontSize(28);
+    doc.setTextColor(...NAVY);
+    doc.setFont("helvetica", "bold");
+    doc.text("EDR", PAGE_W / 2, boxY + 25, { align: "center" });
+  }
   doc.setFontSize(9);
   doc.setTextColor(...GRAY);
   doc.text("INSPEÇÕES E REGULAÇÕES DE SINISTROS", PAGE_W / 2, boxY + 33, { align: "center" });
