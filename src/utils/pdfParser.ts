@@ -162,18 +162,45 @@ export function parseOSData(text: string) {
   ], oficinaSection);
 
   // --- CAPTURA DE ITENS DO ORÇAMENTO ---
-  const itemRegex = /(\d{8})\s+([A-Z0-9\s\-\.\/]{3,60}?)\s+(\d+)\s+([\d,.]+)\s+(\d+)\s+([\d,.]+)/gi;
+  // Formato: Código(8dig) GrupoPeça Descrição MãoDeObra Status PeçaQtd PeçaValor MOQtd MOValor ValorTotal
+  const itemRegex = /(\d{8})\s+([A-ZÀ-Ú\s]+?)\s+((?:[A-ZÀ-Ú][A-ZÀ-Ú\s\/\-\.]+?)+?)\s+(?:SUBSTITUIR|REPARAR|TROCAR|REVISAR|AJUSTAR|INSTALAR|DESMONTAR|MONTAR|VERIFICAR|REGULAR)\s+(?:Em orçamento|Pendente|Aprovado|Reprovado)\s+([\d]+[,.][\d]+)\s+([\d.,]+)\s+([\d]+[,.][\d]+)\s+([\d.,]+)\s+([\d.,]+)/gi;
   let match;
   
   while ((match = itemRegex.exec(cleanText)) !== null) {
     const codigo = match[1];
-    const descricao = match[2].trim();
-    const qtdPeca = parseInt(match[3]);
-    const valorPeca = parseFloat(match[4].replace(/\./g, '').replace(',', '.'));
-    const qtdMO = parseInt(match[5]);
-    const valorMO = parseFloat(match[6].replace(/\./g, '').replace(',', '.'));
+    const descricao = `${match[2].trim()} ${match[3].trim()}`.replace(/\s+/g, ' ');
+    const qtdPeca = parseFloat(match[4].replace(/\./g, '').replace(',', '.'));
+    const valorPeca = parseFloat(match[5].replace(/\./g, '').replace(',', '.'));
+    const qtdMO = parseFloat(match[6].replace(/\./g, '').replace(',', '.'));
+    const valorMO = parseFloat(match[7].replace(/\./g, '').replace(',', '.'));
+    const valorTotal = parseFloat(match[8].replace(/\./g, '').replace(',', '.'));
 
-    if (!isNaN(qtdPeca) || !isNaN(qtdMO)) {
+    data.itens.push({
+      id: crypto.randomUUID(),
+      codigo,
+      descricao,
+      qtdPeca: isNaN(qtdPeca) ? 0 : qtdPeca,
+      valorPeca: isNaN(valorPeca) ? 0 : valorPeca,
+      qtdMaoObra: isNaN(qtdMO) ? 0 : qtdMO,
+      valorMaoObra: isNaN(valorMO) ? 0 : valorMO,
+      valorTotal: isNaN(valorTotal) ? 0 : valorTotal,
+      status: 'pendente',
+      justificativa: ''
+    });
+  }
+
+  // Fallback: tenta regex mais simples se nenhum item foi encontrado
+  if (data.itens.length === 0) {
+    const simpleRegex = /(\d{8})\s+(.+?)\s+([\d]+[,.][\d]+)\s+([\d.,]+)\s+([\d]+[,.][\d]+)\s+([\d.,]+)\s+([\d.,]+)/gi;
+    while ((match = simpleRegex.exec(cleanText)) !== null) {
+      const codigo = match[1];
+      const descricao = match[2].replace(/\s+/g, ' ').replace(/(?:SUBSTITUIR|REPARAR|TROCAR|Em orçamento|Pendente|Aprovado|Reprovado)\s*/gi, '').trim();
+      const qtdPeca = parseFloat(match[3].replace(/\./g, '').replace(',', '.'));
+      const valorPeca = parseFloat(match[4].replace(/\./g, '').replace(',', '.'));
+      const qtdMO = parseFloat(match[5].replace(/\./g, '').replace(',', '.'));
+      const valorMO = parseFloat(match[6].replace(/\./g, '').replace(',', '.'));
+      const valorTotal = parseFloat(match[7].replace(/\./g, '').replace(',', '.'));
+
       data.itens.push({
         id: crypto.randomUUID(),
         codigo,
@@ -182,13 +209,14 @@ export function parseOSData(text: string) {
         valorPeca: isNaN(valorPeca) ? 0 : valorPeca,
         qtdMaoObra: isNaN(qtdMO) ? 0 : qtdMO,
         valorMaoObra: isNaN(valorMO) ? 0 : valorMO,
-        valorTotal: (isNaN(qtdPeca) ? 0 : qtdPeca * (isNaN(valorPeca) ? 0 : valorPeca)) + 
-                    (isNaN(qtdMO) ? 0 : qtdMO * (isNaN(valorMO) ? 0 : valorMO)),
+        valorTotal: isNaN(valorTotal) ? 0 : valorTotal,
         status: 'pendente',
         justificativa: ''
       });
     }
   }
+
+  console.log('[Parser] Itens encontrados:', data.itens.length, data.itens);
 
   return data;
 }
