@@ -162,68 +162,62 @@ export function parseOSData(text: string) {
   ], oficinaSection);
 
   // --- CAPTURA DE ITENS DO ORÇAMENTO ---
-  console.log('[Parser] Texto completo extraído:', cleanText.substring(0, 2000));
+  // A seção de itens começa APÓS a palavra "Itens" no PDF
+  const itensIdx = cleanText.search(/\bItens\b/i);
+  const itensText = itensIdx >= 0 ? cleanText.substring(itensIdx) : "";
+  
+  console.log('[Parser] Seção de Itens encontrada:', itensIdx >= 0, itensText.substring(0, 500));
 
-  // Estratégia: encontrar todos os códigos de 8 dígitos seguidos de texto e valores
-  // Filtra o número da OS para não confundir
-  const osNum = data.ordemServico;
-  
-  // Procura cada código de 8 dígitos e tenta extrair os dados do item
-  const codigoRegex = /\b(\d{8})\b/g;
-  let match;
-  const codigosEncontrados: string[] = [];
-  
-  while ((match = codigoRegex.exec(cleanText)) !== null) {
-    const cod = match[1];
-    if (cod === osNum) continue;
-    if (codigosEncontrados.includes(cod)) continue;
-    codigosEncontrados.push(cod);
-  }
-  
-  console.log('[Parser] Códigos de 8 dígitos encontrados (excluindo OS):', codigosEncontrados);
+  if (itensText) {
+    const codigoRegex = /\b(\d{8})\b/g;
+    let match;
+    const codigosEncontrados: { codigo: string; index: number }[] = [];
+    
+    while ((match = codigoRegex.exec(itensText)) !== null) {
+      const cod = match[1];
+      if (cod === data.ordemServico) continue;
+      if (codigosEncontrados.some(c => c.codigo === cod)) continue;
+      codigosEncontrados.push({ codigo: cod, index: match.index });
+    }
+    
+    console.log('[Parser] Códigos encontrados na seção Itens:', codigosEncontrados.map(c => c.codigo));
 
-  for (const codigo of codigosEncontrados) {
-    // Busca o trecho que começa com este código
-    const codIdx = cleanText.indexOf(codigo);
-    if (codIdx === -1) continue;
-    
-    // Pega o trecho após o código até o próximo código de 8 dígitos ou fim
-    const afterCode = cleanText.substring(codIdx + 8);
-    
-    // Extrai todos os valores numéricos no formato XX.XXX,XX ou X.XXX,XX ou XXX,XX
-    const numeros = afterCode.match(/\d{1,3}(?:\.\d{3})*,\d{2}/g);
-    
-    if (numeros && numeros.length >= 5) {
-      // Os 5 primeiros valores são: qtdPeca, valorPeca, qtdMO, valorMO, valorTotal
-      const parseNum = (s: string) => parseFloat(s.replace(/\./g, '').replace(',', '.'));
-      const qtdPeca = parseNum(numeros[0]);
-      const valorPeca = parseNum(numeros[1]);
-      const qtdMO = parseNum(numeros[2]);
-      const valorMO = parseNum(numeros[3]);
-      const valorTotal = parseNum(numeros[4]);
+    for (const { codigo, index } of codigosEncontrados) {
+      const afterCode = itensText.substring(index + 8);
       
-      // Descrição: texto entre o código e o primeiro número
-      const firstNumIdx = afterCode.indexOf(numeros[0]);
-      let descricao = afterCode.substring(0, firstNumIdx).replace(/\s+/g, ' ').trim();
-      // Remove palavras de ação e status
-      descricao = descricao
-        .replace(/\b(?:SUBSTITUIR|REPARAR|TROCAR|REVISAR|AJUSTAR|INSTALAR|DESMONTAR|MONTAR|VERIFICAR|REGULAR)\b/gi, '')
-        .replace(/\b(?:Em\s+orçamento|Pendente|Aprovado|Reprovado)\b/gi, '')
-        .replace(/\s+/g, ' ')
-        .trim();
+      // Extrai valores numéricos no formato XX.XXX,XX ou X.XXX,XX ou XXX,XX
+      const numeros = afterCode.match(/\d{1,3}(?:\.\d{3})*,\d{2}/g);
       
-      data.itens.push({
-        id: crypto.randomUUID(),
-        codigo,
-        descricao,
-        qtdPeca: isNaN(qtdPeca) ? 0 : qtdPeca,
-        valorPeca: isNaN(valorPeca) ? 0 : valorPeca,
-        qtdMaoObra: isNaN(qtdMO) ? 0 : qtdMO,
-        valorMaoObra: isNaN(valorMO) ? 0 : valorMO,
-        valorTotal: isNaN(valorTotal) ? 0 : valorTotal,
-        status: 'pendente',
-        justificativa: ''
-      });
+      if (numeros && numeros.length >= 5) {
+        const parseNum = (s: string) => parseFloat(s.replace(/\./g, '').replace(',', '.'));
+        const qtdPeca = parseNum(numeros[0]);
+        const valorPeca = parseNum(numeros[1]);
+        const qtdMO = parseNum(numeros[2]);
+        const valorMO = parseNum(numeros[3]);
+        const valorTotal = parseNum(numeros[4]);
+        
+        // Descrição: texto entre o código e o primeiro número
+        const firstNumIdx = afterCode.indexOf(numeros[0]);
+        let descricao = afterCode.substring(0, firstNumIdx).replace(/\s+/g, ' ').trim();
+        descricao = descricao
+          .replace(/\b(?:SUBSTITUIR|REPARAR|TROCAR|REVISAR|AJUSTAR|INSTALAR|DESMONTAR|MONTAR|VERIFICAR|REGULAR)\b/gi, '')
+          .replace(/\b(?:Em\s+orçamento|Pendente|Aprovado|Reprovado)\b/gi, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+        
+        data.itens.push({
+          id: crypto.randomUUID(),
+          codigo,
+          descricao,
+          qtdPeca: isNaN(qtdPeca) ? 0 : qtdPeca,
+          valorPeca: isNaN(valorPeca) ? 0 : valorPeca,
+          qtdMaoObra: isNaN(qtdMO) ? 0 : qtdMO,
+          valorMaoObra: isNaN(valorMO) ? 0 : valorMO,
+          valorTotal: isNaN(valorTotal) ? 0 : valorTotal,
+          status: 'pendente',
+          justificativa: ''
+        });
+      }
     }
   }
 
