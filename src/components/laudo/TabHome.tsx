@@ -6,16 +6,18 @@ import {
 } from "recharts";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Truck, Clock, DollarSign, Wrench, AlertCircle, FileSearch, ClipboardList, FileUp } from "lucide-react";
+import { Truck, Clock, DollarSign, Wrench, AlertCircle, FileSearch, ClipboardList, FileUp, FileCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
 import { extractTextFromPDF, parseOSData } from "@/utils/pdfParser";
+import { parseXMLOrcamento } from "@/utils/xmlParser";
 import { useToast } from "@/hooks/use-toast";
 
 export function TabHome() {
   const { listaLaudos, setActiveTab, updateLaudo, updateCliente, updateVeiculo, updateOficina, updateAnalise, novoLaudo } = useLaudo();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const xmlInputRef = useRef<HTMLInputElement>(null);
   
   const laudosFinalizados = listaLaudos.filter(l => l.status === 'finalizado');
   const laudosPendentes = listaLaudos.filter(l => l.status === 'pendente' || !l.status);
@@ -52,6 +54,27 @@ export function TabHome() {
         description: "Não foi possível ler os dados deste PDF.", 
         variant: "destructive" 
       });
+    }
+  };
+
+  const handleImportXML = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    toast({ title: "Processando XML...", description: "Extraindo informações do orçamento." });
+    try {
+      const text = await file.text();
+      const data = parseXMLOrcamento(text);
+      novoLaudo();
+      if (data.ordemServico) updateLaudo({ ordemServico: data.ordemServico });
+      if (data.dadosCliente) updateCliente(data.dadosCliente);
+      if (data.dadosVeiculo) updateVeiculo(data.dadosVeiculo);
+      if (data.dadosOficina) updateOficina(data.dadosOficina);
+      if (data.itens.length > 0) updateAnalise({ itensOrcamento: data.itens });
+      toast({ title: "Importação XML Concluída!", description: `OS ${data.ordemServico || ''} carregada com ${data.itens.length} itens.` });
+      setActiveTab("cliente");
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Erro na Importação XML", description: "Não foi possível ler os dados deste arquivo XML.", variant: "destructive" });
     }
   };
 
@@ -107,7 +130,7 @@ export function TabHome() {
     <div className="space-y-6">
       <div className="flex flex-wrap gap-4 items-center justify-between">
         <h2 className="text-2xl font-bold text-primary">Dashboard de Operações</h2>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -115,11 +138,25 @@ export function TabHome() {
             accept="application/pdf" 
             onChange={handleImportPDF} 
           />
+          <input 
+            type="file" 
+            ref={xmlInputRef} 
+            className="hidden" 
+            accept=".xml,text/xml,application/xml" 
+            onChange={handleImportXML} 
+          />
           <Button 
             onClick={() => fileInputRef.current?.click()} 
             className="gap-2 bg-accent hover:bg-accent/90"
           >
-            <FileUp className="h-4 w-4" /> Importar Orçamento (PDF)
+            <FileUp className="h-4 w-4" /> Importar PDF
+          </Button>
+          <Button 
+            onClick={() => xmlInputRef.current?.click()} 
+            variant="outline"
+            className="gap-2 border-accent text-accent hover:bg-accent/5"
+          >
+            <FileCode className="h-4 w-4" /> Importar XML
           </Button>
           <Button onClick={novoLaudo} variant="outline" className="gap-2">
             <ClipboardList className="h-4 w-4" /> Nova Vistoria Manual
