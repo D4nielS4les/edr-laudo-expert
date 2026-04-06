@@ -130,7 +130,7 @@ export function TabHome() {
     <div className="space-y-6">
       <div className="flex flex-wrap gap-4 items-center justify-between">
         <h2 className="text-2xl font-bold text-primary">Dashboard de Operações</h2>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -138,11 +138,25 @@ export function TabHome() {
             accept="application/pdf" 
             onChange={handleImportPDF} 
           />
+          <input 
+            type="file" 
+            ref={xmlInputRef} 
+            className="hidden" 
+            accept=".xml,text/xml,application/xml" 
+            onChange={handleImportXML} 
+          />
           <Button 
             onClick={() => fileInputRef.current?.click()} 
             className="gap-2 bg-accent hover:bg-accent/90"
           >
-            <FileUp className="h-4 w-4" /> Importar Orçamento (PDF)
+            <FileUp className="h-4 w-4" /> Importar PDF
+          </Button>
+          <Button 
+            onClick={() => xmlInputRef.current?.click()} 
+            variant="outline"
+            className="gap-2 border-accent text-accent hover:bg-accent/5"
+          >
+            <FileCode className="h-4 w-4" /> Importar XML
           </Button>
           <Button onClick={novoLaudo} variant="outline" className="gap-2">
             <ClipboardList className="h-4 w-4" /> Nova Vistoria Manual
