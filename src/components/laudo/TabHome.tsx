@@ -57,6 +57,27 @@ export function TabHome() {
     }
   };
 
+  const handleImportXML = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    toast({ title: "Processando XML...", description: "Extraindo informações do orçamento." });
+    try {
+      const text = await file.text();
+      const data = parseXMLOrcamento(text);
+      novoLaudo();
+      if (data.ordemServico) updateLaudo({ ordemServico: data.ordemServico });
+      if (data.dadosCliente) updateCliente(data.dadosCliente);
+      if (data.dadosVeiculo) updateVeiculo(data.dadosVeiculo);
+      if (data.dadosOficina) updateOficina(data.dadosOficina);
+      if (data.itens.length > 0) updateAnalise({ itensOrcamento: data.itens });
+      toast({ title: "Importação XML Concluída!", description: `OS ${data.ordemServico || ''} carregada com ${data.itens.length} itens.` });
+      setActiveTab("cliente");
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Erro na Importação XML", description: "Não foi possível ler os dados deste arquivo XML.", variant: "destructive" });
+    }
+  };
+
   const processData = () => {
     const groups: Record<string, any> = {};
     const sortedLaudos = [...laudosFinalizados].sort((a, b) => a.dataLaudo.localeCompare(b.dataLaudo));
