@@ -6,16 +6,18 @@ import {
 } from "recharts";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Truck, Clock, DollarSign, Wrench, AlertCircle, FileSearch, ClipboardList, FileUp } from "lucide-react";
+import { Truck, Clock, DollarSign, Wrench, AlertCircle, FileSearch, ClipboardList, FileUp, FileCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
 import { extractTextFromPDF, parseOSData } from "@/utils/pdfParser";
+import { parseXMLOrcamento } from "@/utils/xmlParser";
 import { useToast } from "@/hooks/use-toast";
 
 export function TabHome() {
   const { listaLaudos, setActiveTab, updateLaudo, updateCliente, updateVeiculo, updateOficina, updateAnalise, novoLaudo } = useLaudo();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const xmlInputRef = useRef<HTMLInputElement>(null);
   
   const laudosFinalizados = listaLaudos.filter(l => l.status === 'finalizado');
   const laudosPendentes = listaLaudos.filter(l => l.status === 'pendente' || !l.status);
