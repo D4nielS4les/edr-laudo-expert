@@ -14,7 +14,7 @@ import { parseXMLOrcamento } from "@/utils/xmlParser";
 import { useToast } from "@/hooks/use-toast";
 
 export function TabHome() {
-  const { listaLaudos, setActiveTab, updateLaudo, updateCliente, updateVeiculo, updateOficina, updateAnalise, novoLaudo } = useLaudo();
+  const { listaLaudos, setActiveTab, updateLaudo, novoLaudo } = useLaudo();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const xmlInputRef = useRef<HTMLInputElement>(null);
@@ -32,14 +32,40 @@ export function TabHome() {
       const text = await extractTextFromPDF(file);
       const data = parseOSData(text);
 
-      // Inicia um novo laudo com os dados extraídos
-      novoLaudo();
-      
-      if (data.ordemServico) updateLaudo({ ordemServico: data.ordemServico });
-      if (data.dadosCliente) updateCliente(data.dadosCliente);
-      if (data.dadosVeiculo) updateVeiculo(data.dadosVeiculo);
-      if (data.dadosOficina) updateOficina(data.dadosOficina);
-      if (data.itens.length > 0) updateAnalise({ itensOrcamento: data.itens });
+      updateLaudo({
+        id: crypto.randomUUID(),
+        status: 'pendente',
+        ordemServico: data.ordemServico || '',
+        dadosCliente: {
+          solicitante: data.dadosCliente?.solicitante || '',
+          empresa: data.dadosCliente?.empresa || '',
+          clienteFinal: data.dadosCliente?.clienteFinal || '',
+        },
+        dadosVeiculo: {
+          marcaModelo: data.dadosVeiculo?.marcaModelo || '',
+          anoFabricacao: data.dadosVeiculo?.anoFabricacao || '',
+          anoModelo: data.dadosVeiculo?.anoModelo || '',
+          placa: data.dadosVeiculo?.placa || '',
+          chassi: data.dadosVeiculo?.chassi || '',
+          hodometro: data.dadosVeiculo?.hodometro || '',
+        },
+        dadosOficina: {
+          nome: data.dadosOficina?.nome || '',
+          endereco: data.dadosOficina?.endereco || '',
+          bairro: data.dadosOficina?.bairro || '',
+          cidade: data.dadosOficina?.cidade || '',
+          telefone: data.dadosOficina?.telefone || '',
+          responsavel: data.dadosOficina?.responsavel || '',
+          cnpj: data.dadosOficina?.cnpj || '',
+        },
+        analise: {
+          itensOrcamento: data.itens || [],
+          causaRaiz: '',
+          historicoManutencao: '',
+          relatoMotorista: '',
+        },
+        dataLaudo: new Date().toISOString().split("T")[0],
+      });
 
       toast({ 
         title: "Importação Concluída!", 
@@ -64,12 +90,43 @@ export function TabHome() {
     try {
       const text = await file.text();
       const data = parseXMLOrcamento(text);
-      novoLaudo();
-      if (data.ordemServico) updateLaudo({ ordemServico: data.ordemServico });
-      if (data.dadosCliente) updateCliente(data.dadosCliente);
-      if (data.dadosVeiculo) updateVeiculo(data.dadosVeiculo);
-      if (data.dadosOficina) updateOficina(data.dadosOficina);
-      if (data.itens.length > 0) updateAnalise({ itensOrcamento: data.itens });
+      
+      // Aplica tudo de uma vez para evitar perda por batching do React
+      updateLaudo({
+        id: crypto.randomUUID(),
+        status: 'pendente',
+        ordemServico: data.ordemServico || '',
+        dadosCliente: {
+          solicitante: data.dadosCliente.solicitante || '',
+          empresa: data.dadosCliente.empresa || '',
+          clienteFinal: data.dadosCliente.clienteFinal || '',
+        },
+        dadosVeiculo: {
+          marcaModelo: data.dadosVeiculo.marcaModelo || '',
+          anoFabricacao: data.dadosVeiculo.anoFabricacao || '',
+          anoModelo: data.dadosVeiculo.anoModelo || '',
+          placa: data.dadosVeiculo.placa || '',
+          chassi: data.dadosVeiculo.chassi || '',
+          hodometro: data.dadosVeiculo.hodometro || '',
+        },
+        dadosOficina: {
+          nome: data.dadosOficina.nome || '',
+          endereco: data.dadosOficina.endereco || '',
+          bairro: data.dadosOficina.bairro || '',
+          cidade: data.dadosOficina.cidade || '',
+          telefone: data.dadosOficina.telefone || '',
+          responsavel: data.dadosOficina.responsavel || '',
+          cnpj: data.dadosOficina.cnpj || '',
+        },
+        analise: {
+          itensOrcamento: data.itens,
+          causaRaiz: '',
+          historicoManutencao: '',
+          relatoMotorista: '',
+        },
+        dataLaudo: new Date().toISOString().split("T")[0],
+      });
+
       toast({ title: "Importação XML Concluída!", description: `OS ${data.ordemServico || ''} carregada com ${data.itens.length} itens.` });
       setActiveTab("cliente");
     } catch (err) {
