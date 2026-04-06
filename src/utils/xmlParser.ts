@@ -82,7 +82,8 @@ export function parseXMLOrcamento(xmlContent: string) {
     const codigo = findField(block, ['Codigo', 'codigo', 'CodigoPeca', 'codigo_peca', 'Referencia', 'referencia', 'Ref', 'ref', 'cod']);
     const descricao = findField(block, ['Descricao', 'descricao', 'DescricaoPeca', 'descricao_peca', 'Nome', 'nome', 'desc']);
     
-    const qtdPeca = parseBRDecimal(findField(block, ['QtdPeca', 'qtd_peca', 'QuantidadePeca', 'quantidade_peca', 'QtdePeca', 'Quantidade', 'quantidade', 'Qtd', 'qtd'])) || 1;
+    const qtdPecaRaw = findField(block, ['QtdPeca', 'qtd_peca', 'QuantidadePeca', 'quantidade_peca', 'QtdePeca', 'Quantidade', 'quantidade', 'Qtd', 'qtd']);
+    const qtdPeca = qtdPecaRaw ? parseBRDecimal(qtdPecaRaw) : 1;
     const valorPeca = parseBRDecimal(findField(block, ['ValorPeca', 'valor_peca', 'PrecoPeca', 'preco_peca', 'ValorUnitPeca', 'valor_unit_peca']));
     const qtdMaoObra = parseBRDecimal(findField(block, ['QtdMaoObra', 'qtd_mao_obra', 'QuantidadeMO', 'quantidade_mo', 'QtdeMO', 'HorasMO', 'horas_mo'])) || 0;
     const valorMaoObra = parseBRDecimal(findField(block, ['ValorMaoObra', 'valor_mao_obra', 'PrecoMO', 'preco_mo', 'ValorUnitMO', 'valor_unit_mo']));
