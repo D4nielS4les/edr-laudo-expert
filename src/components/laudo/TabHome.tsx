@@ -14,7 +14,7 @@ import { parseXMLOrcamento } from "@/utils/xmlParser";
 import { useToast } from "@/hooks/use-toast";
 
 export function TabHome() {
-  const { listaLaudos, setActiveTab, updateLaudo, updateCliente, updateVeiculo, updateOficina, updateAnalise, novoLaudo } = useLaudo();
+  const { listaLaudos, setActiveTab, updateLaudo, novoLaudo } = useLaudo();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const xmlInputRef = useRef<HTMLInputElement>(null);
