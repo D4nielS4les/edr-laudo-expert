@@ -1,65 +1,92 @@
 /**
  * Extração universal de itens do orçamento com múltiplas estratégias.
- * Funciona com qualquer PDF de orçamento automotivo/mecânico.
+ * Campos buscados: referência/código, descrição, quantidade, valor unitário, valor total.
  */
 import { parseDecimal } from './helpers';
 
 const NUM_BR = '\\d{1,3}(?:\\.\\d{3})*,\\d{2}';
-const NUM_ANY = '(?:\\d{1,3}(?:\\.\\d{3})*,\\d{2}|\\d+(?:\\.\\d{1,2})?)';
 
 export function extractItensOrcamento(cleanText: string) {
   console.log("[Parser] Texto total para itens:", cleanText.length, "chars");
   
-  // Tenta isolar seções de itens/orçamento
   const secaoItens = isolateItemsSection(cleanText);
   const textoBusca = secaoItens || cleanText;
   
-  console.log("[Parser] Seção de itens:", textoBusca.substring(0, 2000));
+  console.log("[Parser] Seção de itens:", textoBusca.substring(0, 3000));
 
-  // Estratégia 1: Linhas com código(6-10 dig) + descrição + valores BR
-  let items = estrategiaCodigo(textoBusca);
+  // Estratégia 1: ref(4-10 dígitos) + descrição + qtd + valor unit + valor total
+  let items = estrategiaRefDescQtdValor(textoBusca);
+  if (items.length > 0) { console.log(`[Parser] Estratégia RefDescQtdValor: ${items.length} itens`); return items; }
+
+  // Estratégia 2: Linhas com código(4-10 dígitos) + texto + 2+ valores BR
+  items = estrategiaCodigo(textoBusca);
   if (items.length > 0) { console.log(`[Parser] Estratégia Código: ${items.length} itens`); return items; }
 
-  // Estratégia 2: Linhas com 3+ valores numéricos BR (tabela de orçamento)
+  // Estratégia 3: Agrupamentos de valores BR com descrição precedente
   items = estrategiaValoresBR(textoBusca);
-  if (items.length > 0) { console.log(`[Parser] Estratégia Valores BR: ${items.length} itens`); return items; }
+  if (items.length > 0) { console.log(`[Parser] Estratégia ValoresBR: ${items.length} itens`); return items; }
 
-  // Estratégia 3: Padrão "descrição + quantidade + valor"
+  // Estratégia 4: "descrição ... R$ valor"
   items = estrategiaDescValor(textoBusca);
-  if (items.length > 0) { console.log(`[Parser] Estratégia Desc+Valor: ${items.length} itens`); return items; }
-
-  // Estratégia 4: Qualquer agrupamento de valores numéricos
-  items = estrategiaGenerica(textoBusca);
-  if (items.length > 0) { console.log(`[Parser] Estratégia Genérica: ${items.length} itens`); return items; }
+  if (items.length > 0) { console.log(`[Parser] Estratégia DescValor: ${items.length} itens`); return items; }
 
   console.log("[Parser] Nenhum item encontrado");
   return [];
 }
 
 function isolateItemsSection(text: string): string {
-  // Tenta encontrar seções de itens/orçamento/peças/serviços
   const sectionStarts = [
-    /\b(?:Itens|Itens\s*do\s*Orçamento|Orçamento|Peças\s*e\s*Serviços|Lista\s*de\s*Peças|Serviços|Descrição\s*dos\s*Serviços|Relação\s*de\s*Peças|Relação\s*de\s*Serviços)\b/gi,
+    /\b(?:Itens|Itens\s*do\s*Orçamento|Orçamento|Orcamento|Peças\s*e\s*Serviços|Lista\s*de\s*Peças|Serviços|Descrição\s*dos\s*Serviços|Relação\s*de\s*Peças|Relação\s*de\s*Serviços|Produtos|Materiais)\b/gi,
   ];
-  
-  const sectionEnds = /\b(?:Subtotais?|Totais?|Total\s*Geral|Valor\s*Total|Observações?|Condições|Assinatura|Autorizo)\b/i;
+  const sectionEnds = /\b(?:Subtotais?|Totais?|Total\s*Geral|Valor\s*Total\s*(?:do\s*)?Orçamento|Observações?|Condições|Assinatura|Autorizo)\b/i;
   
   for (const startRe of sectionStarts) {
     const startMatch = startRe.exec(text);
     if (startMatch) {
       const afterStart = text.substring(startMatch.index);
       const endMatch = afterStart.substring(50).match(sectionEnds);
-      if (endMatch) {
-        return afterStart.substring(0, 50 + endMatch.index);
-      }
+      if (endMatch) return afterStart.substring(0, 50 + endMatch.index);
       return afterStart;
     }
   }
   return '';
 }
 
+/**
+ * Estratégia principal: procura padrões com referência, descrição, qtd, valor unitário, valor total.
+ * Exemplo: "12345678 FILTRO DE OLEO 2,00 45,90 91,80"
+ */
+function estrategiaRefDescQtdValor(text: string) {
+  const items: ReturnType<typeof buildItem>[] = [];
+  // Procura: código(4-10 dig) + texto(descrição) + sequência de valores numéricos BR
+  const re = new RegExp(
+    `(\\d{4,10})\\s+(.+?)\\s+(${NUM_BR})\\s+(${NUM_BR})\\s+(${NUM_BR})`,
+    'g'
+  );
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const desc = m[2].replace(/\s+/g, ' ').trim();
+    if (desc.length < 2) continue;
+    // Padrão: ref, desc, qtd, valor unitário, valor total
+    items.push(buildItem(m[1], desc, m[3], m[4], m[5]));
+  }
+  
+  if (items.length > 0) return items;
+
+  // Tenta com 4 valores (qtd peça, valor peça, qtd MO, valor MO) + total
+  const re5 = new RegExp(
+    `(\\d{4,10})\\s+(.+?)\\s+(${NUM_BR})\\s+(${NUM_BR})\\s+(${NUM_BR})\\s+(${NUM_BR})\\s+(${NUM_BR})`,
+    'g'
+  );
+  while ((m = re5.exec(text)) !== null) {
+    const desc = m[2].replace(/\s+/g, ' ').trim();
+    if (desc.length < 2) continue;
+    items.push(buildItemFull(m[1], desc, m[3], m[4], m[5], m[6], m[7]));
+  }
+  return items;
+}
+
 function estrategiaCodigo(text: string) {
-  // Procura linhas com código de 4-10 dígitos seguido de descrição e valores
   const items: ReturnType<typeof buildItem>[] = [];
   const codeRe = /\b(\d{4,10})\b/g;
   let m: RegExpExecArray | null;
@@ -68,68 +95,47 @@ function estrategiaCodigo(text: string) {
     const afterCode = text.substring(m.index + m[0].length, m.index + m[0].length + 500);
     const nums = [...afterCode.matchAll(new RegExp(`(${NUM_BR})`, 'g'))];
     
-    if (nums.length >= 2) {
-      const firstNumPos = nums[0].index!;
-      const desc = afterCode.substring(0, firstNumPos).replace(/\s+/g, ' ').trim();
-      
-      // Ignora se a descrição é vazia ou muito curta
-      if (desc.length < 2) continue;
-      
-      if (nums.length >= 5) {
-        items.push(buildItem(m[1], desc, nums[0][1], nums[1][1], nums[2][1], nums[3][1], nums[4][1]));
-      } else if (nums.length >= 3) {
-        // qtd + valor unitário + total
-        items.push(buildItem(m[1], desc, nums[0][1], nums[1][1], '0,00', '0,00', nums[2][1]));
-      } else {
-        // qtd + total
-        items.push(buildItem(m[1], desc, nums[0][1], nums[1][1], '0,00', '0,00', nums[1][1]));
-      }
+    if (nums.length < 2) continue;
+    
+    const firstNumPos = nums[0].index!;
+    const desc = afterCode.substring(0, firstNumPos).replace(/\s+/g, ' ').trim();
+    if (desc.length < 2) continue;
+    
+    if (nums.length >= 3) {
+      // ref + desc + qtd + valor unit + valor total
+      items.push(buildItem(m[1], desc, nums[0][1], nums[1][1], nums[2][1]));
+    } else {
+      // ref + desc + valor unit + valor total (qtd=1)
+      items.push(buildItem(m[1], desc, '1,00', nums[0][1], nums[1][1]));
     }
   }
   return items;
 }
 
 function estrategiaValoresBR(text: string) {
-  // Procura agrupamentos de 3+ valores numéricos BR com texto precedente
   const items: ReturnType<typeof buildItem>[] = [];
   const allNums = [...text.matchAll(new RegExp(`(${NUM_BR})`, 'g'))];
+  if (allNums.length < 2) return items;
   
-  if (allNums.length < 3) return items;
-  
-  // Agrupa valores próximos (dentro de 200 chars entre si)
   let i = 0;
   while (i < allNums.length) {
-    const groupStart = i;
     let groupEnd = i;
-    
     while (groupEnd + 1 < allNums.length && 
            allNums[groupEnd + 1].index! - (allNums[groupEnd].index! + allNums[groupEnd][0].length) < 50) {
       groupEnd++;
     }
     
-    const groupSize = groupEnd - groupStart + 1;
-    
+    const groupSize = groupEnd - i + 1;
     if (groupSize >= 2) {
-      const startPos = allNums[groupStart].index!;
+      const startPos = allNums[i].index!;
       const precedingText = text.substring(Math.max(0, startPos - 300), startPos).trim();
-      
-      // Extrai descrição: últimas palavras significativas antes dos números
       const desc = extractDescription(precedingText);
       
-      if (desc.length >= 2) {
-        if (groupSize >= 5) {
-          items.push(buildItem('', desc,
-            allNums[groupStart][1], allNums[groupStart + 1][1],
-            allNums[groupStart + 2][1], allNums[groupStart + 3][1],
-            allNums[groupStart + 4][1]));
-        } else if (groupSize >= 3) {
-          items.push(buildItem('', desc,
-            allNums[groupStart][1], allNums[groupStart + 1][1],
-            '0,00', '0,00', allNums[groupStart + 2][1]));
+      if (desc.length >= 3) {
+        if (groupSize >= 3) {
+          items.push(buildItem('', desc, allNums[i][1], allNums[i + 1][1], allNums[i + 2][1]));
         } else {
-          items.push(buildItem('', desc,
-            '1,00', allNums[groupStart][1],
-            '0,00', '0,00', allNums[groupStart + 1][1]));
+          items.push(buildItem('', desc, '1,00', allNums[i][1], allNums[i + 1][1]));
         }
       }
       i = groupEnd + 1;
@@ -141,80 +147,78 @@ function estrategiaValoresBR(text: string) {
 }
 
 function estrategiaDescValor(text: string) {
-  // Procura padrões "descrição ... R$ valor" ou "descrição ... valor"
   const items: ReturnType<typeof buildItem>[] = [];
-  const lineRe = /(.{5,100}?)\s+(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/g;
+  const lineRe = /(.{5,120}?)\s+(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2})/g;
   let m: RegExpExecArray | null;
   
   while ((m = lineRe.exec(text)) !== null) {
     const desc = m[1].replace(/\s+/g, ' ').trim();
-    const valor = m[2];
-    
-    // Ignora linhas que parecem ser cabeçalhos ou totais
-    if (/(?:total|subtotal|desconto|observ|condição|assinatura)/i.test(desc)) continue;
+    if (/(?:total|subtotal|desconto|observ|condição|assinatura|fone|telefone|cnpj|cpf)/i.test(desc)) continue;
     if (/^\d+$/.test(desc)) continue;
+    if (desc.length < 3) continue;
     
-    items.push(buildItem('', desc, '1,00', valor, '0,00', '0,00', valor));
+    items.push(buildItem('', desc, '1,00', m[2], m[2]));
   }
   return items;
 }
 
-function estrategiaGenerica(text: string) {
-  // Última tentativa: busca qualquer linha que tenha texto + pelo menos um valor monetário
-  const items: ReturnType<typeof buildItem>[] = [];
-  const segments = text.split(/[;\n]/);
-  
-  for (const seg of segments) {
-    const trimmed = seg.trim();
-    if (trimmed.length < 5) continue;
-    
-    const valores = [...trimmed.matchAll(new RegExp(`(${NUM_ANY})`, 'g'))];
-    const textoPartes = trimmed.replace(new RegExp(NUM_ANY, 'g'), '').replace(/\s+/g, ' ').trim();
-    
-    if (valores.length >= 1 && textoPartes.length > 3 && !/(?:total|subtotal)/i.test(textoPartes)) {
-      const valorTotal = valores[valores.length - 1][1];
-      items.push(buildItem('', textoPartes, '1,00', valorTotal, '0,00', '0,00', valorTotal));
-    }
-  }
-  
-  // Filtra itens muito genéricos (sem descrição real)
-  return items.filter(item => item.descricao.length > 3);
-}
-
 function extractDescription(text: string): string {
-  // Remove códigos e números do começo, pega palavras significativas
-  const cleaned = text
-    .replace(/\d{4,}/g, '') // remove códigos numéricos longos
+  return text
+    .replace(/\d{4,}/g, '')
     .replace(/(?:SUBSTITUIR|REPARAR|TROCAR|REVISAR|AJUSTAR|INSTALAR|DESMONTAR|MONTAR|VERIFICAR|REGULAR|ALINHAR|BALANCEAR|CALIBRAR|DIAGNOSTICAR|Em\s+orçamento|Pendente|Aprovado|Reprovado)/gi, '')
     .replace(/\s+/g, ' ')
-    .trim();
-  
-  // Pega as últimas palavras significativas (até 15 palavras)
-  const words = cleaned.split(/\s+/).filter(w => w.length > 1);
-  return words.slice(-15).join(' ');
+    .trim()
+    .split(/\s+/)
+    .filter(w => w.length > 1)
+    .slice(-15)
+    .join(' ');
 }
 
+/** Constrói item com: referência, descrição, quantidade, valor unitário, valor total */
 function buildItem(
-  codigo: string, descricao: string,
-  qtdPecaStr: string, valorPecaTotalStr: string,
-  qtdMOStr: string, valorMOTotalStr: string,
-  valorTotalStr: string
+  referencia: string, descricao: string,
+  qtdStr: string, valorUnitStr: string, valorTotalStr: string
 ) {
-  const qtdPeca = parseDecimal(qtdPecaStr) || 1;
-  const valorPecaTotal = parseDecimal(valorPecaTotalStr);
-  const qtdMO = parseDecimal(qtdMOStr);
-  const valorMOTotal = parseDecimal(valorMOTotalStr);
+  const qtd = parseDecimal(qtdStr) || 1;
+  const valorUnit = parseDecimal(valorUnitStr);
   const valorTotal = parseDecimal(valorTotalStr);
 
   return {
     id: crypto.randomUUID(),
-    codigo,
+    codigo: referencia,
+    descricao: descricao.replace(/\s+/g, ' ').trim(),
+    qtdPeca: qtd,
+    valorPeca: valorUnit,
+    qtdMaoObra: 0,
+    valorMaoObra: 0,
+    valorTotal: valorTotal || (qtd * valorUnit),
+    status: 'pendente' as const,
+    justificativa: ''
+  };
+}
+
+/** Constrói item com campos separados de peça e mão de obra */
+function buildItemFull(
+  referencia: string, descricao: string,
+  qtdPecaStr: string, valorPecaStr: string,
+  qtdMOStr: string, valorMOStr: string,
+  valorTotalStr: string
+) {
+  const qtdPeca = parseDecimal(qtdPecaStr) || 1;
+  const valorPeca = parseDecimal(valorPecaStr);
+  const qtdMO = parseDecimal(qtdMOStr);
+  const valorMO = parseDecimal(valorMOStr);
+  const valorTotal = parseDecimal(valorTotalStr);
+
+  return {
+    id: crypto.randomUUID(),
+    codigo: referencia,
     descricao: descricao.replace(/\s+/g, ' ').trim(),
     qtdPeca,
-    valorPeca: qtdPeca > 0 ? valorPecaTotal / qtdPeca : valorPecaTotal,
+    valorPeca: qtdPeca > 0 ? valorPeca / qtdPeca : valorPeca,
     qtdMaoObra: qtdMO,
-    valorMaoObra: qtdMO > 0 ? valorMOTotal / qtdMO : valorMOTotal,
-    valorTotal: valorTotal || (qtdPeca * valorPecaTotal) + (qtdMO * valorMOTotal),
+    valorMaoObra: qtdMO > 0 ? valorMO / qtdMO : valorMO,
+    valorTotal: valorTotal || (qtdPeca * valorPeca) + (qtdMO * valorMO),
     status: 'pendente' as const,
     justificativa: ''
   };
