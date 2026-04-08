@@ -86,10 +86,16 @@ export function TabHome() {
   const handleImportXML = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Reset input para permitir reimportação do mesmo arquivo
+    if (xmlInputRef.current) xmlInputRef.current.value = '';
+
     toast({ title: "Processando XML...", description: "Extraindo informações do orçamento." });
     try {
       const text = await file.text();
+      console.log("XML lido, tamanho:", text.length);
       const data = parseXMLOrcamento(text);
+      console.log("XML parsed:", JSON.stringify(data, null, 2).slice(0, 500));
       
       // Aplica tudo de uma vez para evitar perda por batching do React
       updateLaudo({
@@ -130,7 +136,7 @@ export function TabHome() {
       toast({ title: "Importação XML Concluída!", description: `OS ${data.ordemServico || ''} carregada com ${data.itens.length} itens.` });
       setActiveTab("cliente");
     } catch (err) {
-      console.error(err);
+      console.error("Erro ao importar XML:", err);
       toast({ title: "Erro na Importação XML", description: "Não foi possível ler os dados deste arquivo XML.", variant: "destructive" });
     }
   };
