@@ -97,12 +97,19 @@ export function parseXMLOrcamento(xmlContent: string) {
     return {
       id: crypto.randomUUID(),
       codigo,
+      grupo: findField(block, ['Grupo', 'grupo', 'Categoria', 'categoria', 'TipoItem', 'tipo_item']),
       descricao,
+      acao: findField(block, ['Acao', 'acao', 'Operacao', 'operacao', 'TipoServico', 'tipo_servico']),
+      statusItem: findField(block, ['StatusItem', 'status_item', 'SituacaoItem', 'situacao_item']),
       qtdPeca,
       valorPeca,
       qtdMaoObra,
       valorMaoObra,
       valorTotal,
+      impostos: {
+        ipi: parseBRDecimal(findField(block, ['IPI', 'ipi', 'ValorIPI', 'valor_ipi'])),
+        icms: parseBRDecimal(findField(block, ['ICMS', 'icms', 'ValorICMS', 'valor_icms'])),
+      },
       justificativa: findField(block, ['Justificativa', 'justificativa', 'Observacao', 'observacao', 'Obs', 'obs']),
       status: 'pendente' as const,
     };

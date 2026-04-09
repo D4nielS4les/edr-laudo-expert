@@ -1,8 +1,7 @@
 /**
  * Extração universal de itens do orçamento com múltiplas estratégias.
- * Campos buscados: referência/código, descrição, quantidade, valor unitário, valor total.
  */
-import { parseDecimal } from './helpers';
+import { parseDecimal, scanForKeyword } from './helpers';
 
 const NUM_BR = '\\d{1,3}(?:\\.\\d{3})*,\\d{2}';
 
@@ -14,19 +13,15 @@ export function extractItensOrcamento(cleanText: string) {
   
   console.log("[Parser] Seção de itens:", textoBusca.substring(0, 3000));
 
-  // Estratégia 1: ref(4-10 dígitos) + descrição + qtd + valor unit + valor total
   let items = estrategiaRefDescQtdValor(textoBusca);
   if (items.length > 0) { console.log(`[Parser] Estratégia RefDescQtdValor: ${items.length} itens`); return items; }
 
-  // Estratégia 2: Linhas com código(4-10 dígitos) + texto + 2+ valores BR
   items = estrategiaCodigo(textoBusca);
   if (items.length > 0) { console.log(`[Parser] Estratégia Código: ${items.length} itens`); return items; }
 
-  // Estratégia 3: Agrupamentos de valores BR com descrição precedente
   items = estrategiaValoresBR(textoBusca);
   if (items.length > 0) { console.log(`[Parser] Estratégia ValoresBR: ${items.length} itens`); return items; }
 
-  // Estratégia 4: "descrição ... R$ valor"
   items = estrategiaDescValor(textoBusca);
   if (items.length > 0) { console.log(`[Parser] Estratégia DescValor: ${items.length} itens`); return items; }
 
@@ -52,13 +47,10 @@ function isolateItemsSection(text: string): string {
   return '';
 }
 
-/**
- * Estratégia principal: procura padrões com referência, descrição, qtd, valor unitário, valor total.
- * Exemplo: "12345678 FILTRO DE OLEO 2,00 45,90 91,80"
- */
+// --- Estratégias de extração ---
+
 function estrategiaRefDescQtdValor(text: string) {
   const items: ReturnType<typeof buildItem>[] = [];
-  // Procura: código(4-10 dig) + texto(descrição) + sequência de valores numéricos BR
   const re = new RegExp(
     `(\\d{4,10})\\s+(.+?)\\s+(${NUM_BR})\\s+(${NUM_BR})\\s+(${NUM_BR})`,
     'g'
@@ -67,13 +59,11 @@ function estrategiaRefDescQtdValor(text: string) {
   while ((m = re.exec(text)) !== null) {
     const desc = m[2].replace(/\s+/g, ' ').trim();
     if (desc.length < 2) continue;
-    // Padrão: ref, desc, qtd, valor unitário, valor total
-    items.push(buildItem(m[1], desc, m[3], m[4], m[5]));
+    items.push(buildItem(m[1], desc, m[3], m[4], m[5], text));
   }
   
   if (items.length > 0) return items;
 
-  // Tenta com 4 valores (qtd peça, valor peça, qtd MO, valor MO) + total
   const re5 = new RegExp(
     `(\\d{4,10})\\s+(.+?)\\s+(${NUM_BR})\\s+(${NUM_BR})\\s+(${NUM_BR})\\s+(${NUM_BR})\\s+(${NUM_BR})`,
     'g'
@@ -81,7 +71,7 @@ function estrategiaRefDescQtdValor(text: string) {
   while ((m = re5.exec(text)) !== null) {
     const desc = m[2].replace(/\s+/g, ' ').trim();
     if (desc.length < 2) continue;
-    items.push(buildItemFull(m[1], desc, m[3], m[4], m[5], m[6], m[7]));
+    items.push(buildItemFull(m[1], desc, m[3], m[4], m[5], m[6], m[7], text));
   }
   return items;
 }
@@ -94,7 +84,6 @@ function estrategiaCodigo(text: string) {
   while ((m = codeRe.exec(text)) !== null) {
     const afterCode = text.substring(m.index + m[0].length, m.index + m[0].length + 500);
     const nums = [...afterCode.matchAll(new RegExp(`(${NUM_BR})`, 'g'))];
-    
     if (nums.length < 2) continue;
     
     const firstNumPos = nums[0].index!;
@@ -102,11 +91,9 @@ function estrategiaCodigo(text: string) {
     if (desc.length < 2) continue;
     
     if (nums.length >= 3) {
-      // ref + desc + qtd + valor unit + valor total
-      items.push(buildItem(m[1], desc, nums[0][1], nums[1][1], nums[2][1]));
+      items.push(buildItem(m[1], desc, nums[0][1], nums[1][1], nums[2][1], text));
     } else {
-      // ref + desc + valor unit + valor total (qtd=1)
-      items.push(buildItem(m[1], desc, '1,00', nums[0][1], nums[1][1]));
+      items.push(buildItem(m[1], desc, '1,00', nums[0][1], nums[1][1], text));
     }
   }
   return items;
@@ -133,9 +120,9 @@ function estrategiaValoresBR(text: string) {
       
       if (desc.length >= 3) {
         if (groupSize >= 3) {
-          items.push(buildItem('', desc, allNums[i][1], allNums[i + 1][1], allNums[i + 2][1]));
+          items.push(buildItem('', desc, allNums[i][1], allNums[i + 1][1], allNums[i + 2][1], text));
         } else {
-          items.push(buildItem('', desc, '1,00', allNums[i][1], allNums[i + 1][1]));
+          items.push(buildItem('', desc, '1,00', allNums[i][1], allNums[i + 1][1], text));
         }
       }
       i = groupEnd + 1;
@@ -156,8 +143,7 @@ function estrategiaDescValor(text: string) {
     if (/(?:total|subtotal|desconto|observ|condição|assinatura|fone|telefone|cnpj|cpf)/i.test(desc)) continue;
     if (/^\d+$/.test(desc)) continue;
     if (desc.length < 3) continue;
-    
-    items.push(buildItem('', desc, '1,00', m[2], m[2]));
+    items.push(buildItem('', desc, '1,00', m[2], m[2], text));
   }
   return items;
 }
@@ -165,7 +151,6 @@ function estrategiaDescValor(text: string) {
 function extractDescription(text: string): string {
   return text
     .replace(/\d{4,}/g, '')
-    .replace(/(?:SUBSTITUIR|REPARAR|TROCAR|REVISAR|AJUSTAR|INSTALAR|DESMONTAR|MONTAR|VERIFICAR|REGULAR|ALINHAR|BALANCEAR|CALIBRAR|DIAGNOSTICAR|Em\s+orçamento|Pendente|Aprovado|Reprovado)/gi, '')
     .replace(/\s+/g, ' ')
     .trim()
     .split(/\s+/)
@@ -174,51 +159,137 @@ function extractDescription(text: string): string {
     .join(' ');
 }
 
-/** Constrói item com: referência, descrição, quantidade, valor unitário, valor total */
+// --- Extração de metadados do item ---
+
+function detectGrupo(desc: string, fullText: string): string {
+  const descLow = desc.toLowerCase();
+  if (/\b(?:serviço|servico|mão de obra|mao de obra|m\.o\.|mo\b|instalação|instalacao|reparo|reforma|revisão|revisao|diagnóstico|diagnostico)\b/i.test(descLow)) return 'Serviços';
+  if (/\b(?:peça|peca|filtro|óleo|oleo|correia|pastilha|disco|amortecedor|rolamento|vedação|vedacao|junta|mangueira|parafuso|porca|arruela|anel|retentor|bucha)\b/i.test(descLow)) return 'Peças';
+  if (/\b(?:pintura|funilaria|lanternagem|polimento|cristalização|cristalizacao)\b/i.test(descLow)) return 'Funilaria/Pintura';
+  // Try from section headers in full text
+  const secHeaders = [...fullText.matchAll(/\b(Peças|Pecas|Serviços|Servicos|Funilaria|Pintura|Materiais|Acessórios|Acessorios)\b/gi)];
+  if (secHeaders.length > 0) {
+    // Find the nearest section header before this description
+    for (let i = secHeaders.length - 1; i >= 0; i--) {
+      const hdr = secHeaders[i];
+      const descPos = fullText.indexOf(desc);
+      if (descPos >= 0 && hdr.index! < descPos) {
+        return hdr[1].charAt(0).toUpperCase() + hdr[1].slice(1).toLowerCase();
+      }
+    }
+  }
+  return '';
+}
+
+function detectAcao(desc: string): string {
+  const acoes = [
+    { re: /\b(?:substituir|substituição|substituicao|troca)\b/i, val: 'Substituir' },
+    { re: /\b(?:reparar|reparo|reparação|reparacao)\b/i, val: 'Reparar' },
+    { re: /\b(?:pintar|pintura|repintura)\b/i, val: 'Pintar' },
+    { re: /\b(?:revisar|revisão|revisao)\b/i, val: 'Revisar' },
+    { re: /\b(?:fornecimento|fornec|fornecer)\b/i, val: 'Fornecimento' },
+    { re: /\b(?:instalar|instalação|instalacao|montagem|montar)\b/i, val: 'Instalar' },
+    { re: /\b(?:desmontar|desmontagem)\b/i, val: 'Desmontar' },
+    { re: /\b(?:alinhar|alinhamento)\b/i, val: 'Alinhar' },
+    { re: /\b(?:balancear|balanceamento)\b/i, val: 'Balancear' },
+    { re: /\b(?:diagnosticar|diagnóstico|diagnostico)\b/i, val: 'Diagnosticar' },
+    { re: /\b(?:calibrar|calibração|calibracao)\b/i, val: 'Calibrar' },
+    { re: /\b(?:regular|regulagem)\b/i, val: 'Regular' },
+    { re: /\b(?:reforma|reformar)\b/i, val: 'Reforma' },
+    { re: /\b(?:verificar|verificação|verificacao)\b/i, val: 'Verificar' },
+  ];
+  for (const a of acoes) {
+    if (a.re.test(desc)) return a.val;
+  }
+  return '';
+}
+
+function detectStatusItem(desc: string, fullText: string): string {
+  // Check near the item description for status keywords
+  const combined = desc + ' ' + fullText.substring(Math.max(0, fullText.indexOf(desc) - 50), fullText.indexOf(desc) + desc.length + 100);
+  const statuses = [
+    { re: /\b(?:autorizado|aprovado)\b/i, val: 'Autorizado' },
+    { re: /\b(?:em orçamento|em orcamento)\b/i, val: 'Em orçamento' },
+    { re: /\b(?:em revisão|em revisao)\b/i, val: 'Em revisão' },
+    { re: /\b(?:pendente)\b/i, val: 'Pendente' },
+    { re: /\b(?:reprovado|negado|recusado)\b/i, val: 'Reprovado' },
+  ];
+  for (const s of statuses) {
+    if (s.re.test(combined)) return s.val;
+  }
+  return '';
+}
+
+function detectImpostos(text: string, desc: string): { ipi: number; icms: number } {
+  // Search near the item for tax values
+  const searchArea = text.substring(
+    Math.max(0, text.indexOf(desc)),
+    Math.min(text.length, text.indexOf(desc) + desc.length + 300)
+  );
+  const ipiMatch = searchArea.match(/IPI[:\s]*(\d{1,3}(?:[.,]\d{1,2})?)\s*%?/i);
+  const icmsMatch = searchArea.match(/ICMS[:\s]*(\d{1,3}(?:[.,]\d{1,2})?)\s*%?/i);
+  return {
+    ipi: ipiMatch ? parseDecimal(ipiMatch[1]) : 0,
+    icms: icmsMatch ? parseDecimal(icmsMatch[1]) : 0,
+  };
+}
+
+// --- Builders ---
+
 function buildItem(
   referencia: string, descricao: string,
-  qtdStr: string, valorUnitStr: string, valorTotalStr: string
+  qtdStr: string, valorUnitStr: string, valorTotalStr: string,
+  fullText: string
 ) {
   const qtd = parseDecimal(qtdStr) || 1;
   const valorUnit = parseDecimal(valorUnitStr);
   const valorTotal = parseDecimal(valorTotalStr);
+  const cleanDesc = descricao.replace(/\s+/g, ' ').trim();
 
   return {
     id: crypto.randomUUID(),
     codigo: referencia,
-    descricao: descricao.replace(/\s+/g, ' ').trim(),
+    grupo: detectGrupo(cleanDesc, fullText),
+    descricao: cleanDesc,
+    acao: detectAcao(cleanDesc),
+    statusItem: detectStatusItem(cleanDesc, fullText),
     qtdPeca: qtd,
     valorPeca: valorUnit,
     qtdMaoObra: 0,
     valorMaoObra: 0,
     valorTotal: valorTotal || (qtd * valorUnit),
+    impostos: detectImpostos(fullText, cleanDesc),
     status: 'pendente' as const,
     justificativa: ''
   };
 }
 
-/** Constrói item com campos separados de peça e mão de obra */
 function buildItemFull(
   referencia: string, descricao: string,
   qtdPecaStr: string, valorPecaStr: string,
   qtdMOStr: string, valorMOStr: string,
-  valorTotalStr: string
+  valorTotalStr: string, fullText: string
 ) {
   const qtdPeca = parseDecimal(qtdPecaStr) || 1;
   const valorPeca = parseDecimal(valorPecaStr);
   const qtdMO = parseDecimal(qtdMOStr);
   const valorMO = parseDecimal(valorMOStr);
   const valorTotal = parseDecimal(valorTotalStr);
+  const cleanDesc = descricao.replace(/\s+/g, ' ').trim();
 
   return {
     id: crypto.randomUUID(),
     codigo: referencia,
-    descricao: descricao.replace(/\s+/g, ' ').trim(),
+    grupo: detectGrupo(cleanDesc, fullText),
+    descricao: cleanDesc,
+    acao: detectAcao(cleanDesc),
+    statusItem: detectStatusItem(cleanDesc, fullText),
     qtdPeca,
     valorPeca: qtdPeca > 0 ? valorPeca / qtdPeca : valorPeca,
     qtdMaoObra: qtdMO,
     valorMaoObra: qtdMO > 0 ? valorMO / qtdMO : valorMO,
     valorTotal: valorTotal || (qtdPeca * valorPeca) + (qtdMO * valorMO),
+    impostos: detectImpostos(fullText, cleanDesc),
     status: 'pendente' as const,
     justificativa: ''
   };

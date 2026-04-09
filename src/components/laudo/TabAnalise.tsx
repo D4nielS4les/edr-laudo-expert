@@ -24,12 +24,16 @@ export function TabAnalise() {
     const novo: ItemOrcamento = {
       id: crypto.randomUUID(),
       codigo: "",
+      grupo: "",
       descricao: "",
+      acao: "",
+      statusItem: "",
       qtdPeca: 1,
       valorPeca: 0,
       qtdMaoObra: 0,
       valorMaoObra: 0,
       valorTotal: 0,
+      impostos: { ipi: 0, icms: 0 },
       justificativa: "",
       status: "pendente",
     };
