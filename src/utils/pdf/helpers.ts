@@ -5,7 +5,9 @@
 export function cleanRawText(text: string): string {
   return text
     .replace(/[•●◆■◼◾▪▸▹►▶]/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 
@@ -21,7 +23,7 @@ export function extractFirst(patterns: RegExp[], source: string): string {
 /** Limpa rótulos residuais de um campo extraído. */
 export function cleanField(value: string): string {
   return value
-    .replace(/\s+/g, ' ')
+    .replace(/[ \t]+/g, ' ')
     .replace(/\s+,/g, ',')
     .replace(/[•●◆■◼◾▪▸▹►▶]+/g, ' ')
     .trim();
@@ -38,45 +40,29 @@ export function parseDecimal(value: string): number {
 }
 
 /**
- * Busca genérica: dado um array de labels, procura "label: valor" ou "label valor"
- * no texto e retorna o primeiro match encontrado.
- * Captura tudo após o label até encontrar outro label conhecido ou fim de linha.
+ * Busca genérica por linha: procura uma linha que contenha o keyword,
+ * e retorna o valor após o keyword (separado por : ou espaço).
+ * Opera linha a linha para evitar matches cruzados.
  */
-export function scanForKeyword(text: string, keywords: string[], stopWords: string[] = []): string {
-  const defaultStops = [
-    'Placa', 'Chassi', 'Modelo', 'Marca', 'Ano', 'Veículo', 'Veiculo',
-    'Cliente', 'Solicitante', 'Empresa', 'Razão Social', 'CNPJ', 'CPF',
-    'Endereço', 'Endereco', 'Bairro', 'Cidade', 'Município', 'Municipio',
-    'Telefone', 'Fone', 'Celular', 'Email', 'E-mail',
-    'Oficina', 'Estabelecimento', 'Prestador', 'Responsável', 'Responsavel',
-    'Ordem de Serviço', 'OS', 'Data', 'Hodômetro', 'Hodometro', 'Quilometragem', 'KM',
-    'Seguradora', 'Segurado', 'Proprietário', 'Proprietario',
-    'Observação', 'Observacao', 'Relato', 'Itens', 'Total', 'Subtotal',
-    'Complemento', 'CEP', 'UF', 'Estado', 'Logradouro', 'Número', 'Numero',
-    'Peça', 'Peca', 'Serviço', 'Servico', 'Quantidade', 'Valor',
-    'Marca/Modelo', 'Ano Fab', 'Ano Mod', 'VIN',
-    ...stopWords,
-  ];
+export function scanForKeyword(text: string, keywords: string[]): string {
+  const lines = text.split('\n');
   
-  const stopPattern = defaultStops
-    .filter(s => s.length > 1)
-    .map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-    .join('|');
-
   for (const kw of keywords) {
-    const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    // Tenta "Keyword: valor" e "Keyword valor"
-    const patterns = [
-      new RegExp(`(?:${escaped})\\s*[:=]\\s*(.+?)(?=\\s*(?:${stopPattern})\\s*[:\\s=]|$)`, 'i'),
-      new RegExp(`(?:${escaped})\\s+([^\\n]+?)(?=\\s*(?:${stopPattern})\\s*[:\\s=]|$)`, 'i'),
-    ];
+    const kwLower = kw.toLowerCase();
     
-    for (const re of patterns) {
-      const m = text.match(re);
-      if (m?.[1]) {
-        const val = cleanField(m[1]);
-        // Ignora valores muito curtos ou que são apenas números/pontuação
-        if (val.length > 0 && val.length < 200) return val;
+    for (const line of lines) {
+      const lineLower = line.toLowerCase();
+      const idx = lineLower.indexOf(kwLower);
+      if (idx === -1) continue;
+      
+      // Pega tudo após o keyword na mesma linha
+      let after = line.substring(idx + kw.length).trim();
+      
+      // Remove separadores iniciais (: = -)
+      after = after.replace(/^[\s:=\-–]+/, '').trim();
+      
+      if (after.length > 0 && after.length < 200) {
+        return cleanField(after);
       }
     }
   }
