@@ -2,6 +2,13 @@ export interface DadosCliente {
   solicitante: string;
   empresa: string;
   clienteFinal: string;
+  agendamento: string;
+  endereco: string;
+  bairro: string;
+  cidade: string;
+  cep: string;
+  telefone: string;
+  email: string;
 }
 
 export interface DadosVeiculo {
@@ -11,6 +18,9 @@ export interface DadosVeiculo {
   placa: string;
   chassi: string;
   hodometro: string;
+  motorizacao: string;
+  cor: string;
+  combustivel: string;
 }
 
 export interface DadosOficina {
@@ -34,12 +44,16 @@ export interface FotoVistoria {
 export interface ItemOrcamento {
   id: string;
   codigo: string;
+  grupo: string;
   descricao: string;
+  acao: string;
+  statusItem: string;
   qtdPeca: number;
   valorPeca: number;
   qtdMaoObra: number;
   valorMaoObra: number;
   valorTotal: number;
+  impostos: { ipi: number; icms: number };
   justificativa: string;
   status: 'pendente' | 'aprovado' | 'reprovado';
 }
@@ -65,6 +79,15 @@ export interface DadosProcesso {
   cargoRespTecnico: string;
 }
 
+export interface DadosOS {
+  statusOS: string;
+  tipoManutencao: string;
+  dataEmissao: string;
+  dataPrevInicio: string;
+  dataPrevConclusao: string;
+  dataConclusao: string;
+}
+
 export interface LaudoPericial {
   id: string;
   status: 'pendente' | 'finalizado';
@@ -72,6 +95,7 @@ export interface LaudoPericial {
   dadosVeiculo: DadosVeiculo;
   dadosOficina: DadosOficina;
   dadosProcesso: DadosProcesso;
+  dadosOS: DadosOS;
   fotos: FotoVistoria[];
   analise: DadosAnalise;
   conclusao: DadosConclusao;
