@@ -56,9 +56,9 @@ export function TabAnalise() {
     updateAnalise({ itensOrcamento: itensOrcamento.filter(i => i.id !== id) });
   };
 
-  const subtotalPecas = itensOrcamento.reduce((s, i) => s + i.qtdPeca * i.valorPeca, 0);
-  const subtotalMaoObra = itensOrcamento.reduce((s, i) => s + i.qtdMaoObra * i.valorMaoObra, 0);
-  const totalGeral = subtotalPecas + subtotalMaoObra;
+  const subtotalPecas = itensOrcamento.reduce((s, i) => s + (i.qtdPeca * i.valorPeca), 0);
+  const subtotalMaoObra = itensOrcamento.reduce((s, i) => s + (i.qtdMaoObra * i.valorMaoObra), 0);
+  const totalGeral = itensOrcamento.reduce((s, i) => s + i.valorTotal, 0);
 
   return (
     <div className="space-y-6">
