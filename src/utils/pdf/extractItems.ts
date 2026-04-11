@@ -115,11 +115,7 @@ function parseDescValues(lines: string[], fullText: string) {
     if (/\b(?:código|qtd|quantidade|valor|unit[áa]rio|descrição)\b/i.test(desc)) continue;
     
     const vals = nums.map(n => n[0]);
-    if (vals.length >= 3) {
-      items.push(buildItem('', desc, vals[vals.length - 3], vals[vals.length - 2], vals[vals.length - 1], fullText));
-    } else {
-      items.push(buildItem('', desc, '1,00', vals[0], vals[1], fullText));
-    }
+    items.push(buildItemSmart('', desc, vals, fullText));
   }
   return items;
 }
