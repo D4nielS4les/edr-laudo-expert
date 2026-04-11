@@ -55,6 +55,11 @@ export function extractCliente(text: string) {
     'Cliente Final', 'Cliente', 'Segurado', 'Proprietário', 'Proprietario',
     'Nome do Cliente', 'Titular', 'Beneficiário', 'Beneficiario',
   ]);
+  const cpfCnpj = extractFirst([
+    /(?:CPF|CNPJ|CPF\/CNPJ|CPF\s*\/\s*CNPJ)[:\s]*(\d{2,3}[\.\d\/-]+\d{2})/i,
+    /(\d{3}\.\d{3}\.\d{3}-\d{2})/,
+    /(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/,
+  ], text);
   const agendamento = scanForKeyword(text, ['Agendamento', 'Nº Agendamento', 'Nr Agendamento']);
   const endereco = scanForKeyword(text, ['Endereço', 'Endereco', 'Logradouro']);
   const bairro = scanForKeyword(text, ['Bairro']);
@@ -66,7 +71,7 @@ export function extractCliente(text: string) {
     /\b([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z]{2,})\b/i,
   ], text);
 
-  return { solicitante, empresa, clienteFinal, agendamento, endereco, bairro, cidade, cep, telefone, email };
+  return { solicitante, empresa, clienteFinal, cpfCnpj: cpfCnpj || '', agendamento, endereco, bairro, cidade, cep, telefone, email };
 }
 
 // --------------- VEÍCULO ---------------
