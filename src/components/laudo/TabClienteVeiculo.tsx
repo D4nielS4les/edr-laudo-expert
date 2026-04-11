@@ -29,6 +29,7 @@ export function TabClienteVeiculo() {
           <div><Label>Solicitante</Label><Input value={laudo.dadosCliente.solicitante} onChange={e => updateCliente({ solicitante: e.target.value })} placeholder="Ex: Wellington Xavier" /></div>
           <div><Label>Empresa</Label><Input value={laudo.dadosCliente.empresa} onChange={e => updateCliente({ empresa: e.target.value })} placeholder="Ex: Edenred/Ticket Log" /></div>
           <div><Label>Cliente Final</Label><Input value={laudo.dadosCliente.clienteFinal} onChange={e => updateCliente({ clienteFinal: e.target.value })} placeholder="Ex: ENEL CE" /></div>
+          <div><Label>CPF / CNPJ</Label><Input value={laudo.dadosCliente.cpfCnpj} onChange={e => updateCliente({ cpfCnpj: e.target.value })} placeholder="000.000.000-00" /></div>
           <div><Label>Agendamento</Label><Input value={laudo.dadosCliente.agendamento} onChange={e => updateCliente({ agendamento: e.target.value })} placeholder="Nº Agendamento" /></div>
           <div className="md:col-span-2"><Label>Endereço</Label><Input value={laudo.dadosCliente.endereco} onChange={e => updateCliente({ endereco: e.target.value })} placeholder="Endereço completo" /></div>
           <div><Label>Bairro</Label><Input value={laudo.dadosCliente.bairro} onChange={e => updateCliente({ bairro: e.target.value })} /></div>
