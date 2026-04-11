@@ -48,6 +48,7 @@ export function parseXMLOrcamento(xmlContent: string) {
     solicitante: findField(xmlContent, ['Solicitante', 'solicitante', 'Cliente', 'cliente', 'NomeCliente', 'nome_cliente', 'RazaoSocial', 'razao_social']),
     empresa: findField(xmlContent, ['Empresa', 'empresa', 'Seguradora', 'seguradora', 'Companhia', 'companhia']),
     clienteFinal: findField(xmlContent, ['ClienteFinal', 'cliente_final', 'Segurado', 'segurado', 'Proprietario', 'proprietario']),
+    cpfCnpj: findField(xmlContent, ['CPF', 'cpf', 'CNPJ', 'cnpj', 'CpfCnpj', 'cpf_cnpj', 'CPFCliente', 'CNPJCliente']),
   };
 
   const dadosVeiculo: Partial<DadosVeiculo> = {

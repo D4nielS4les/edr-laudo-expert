@@ -4,7 +4,7 @@ import type { LaudoPericial } from "@/types/laudo";
 const createEmptyLaudo = (): LaudoPericial => ({
   id: crypto.randomUUID(),
   status: 'pendente',
-  dadosCliente: { solicitante: "", empresa: "", clienteFinal: "", agendamento: "", endereco: "", bairro: "", cidade: "", cep: "", telefone: "", email: "" },
+  dadosCliente: { solicitante: "", empresa: "", clienteFinal: "", cpfCnpj: "", agendamento: "", endereco: "", bairro: "", cidade: "", cep: "", telefone: "", email: "" },
   dadosVeiculo: { marcaModelo: "", anoFabricacao: "", anoModelo: "", placa: "", chassi: "", hodometro: "", motorizacao: "", cor: "", combustivel: "" },
   dadosOficina: { nome: "", endereco: "", bairro: "", cidade: "", telefone: "", responsavel: "", cnpj: "" },
   dadosOS: { statusOS: "", tipoManutencao: "", dataEmissao: "", dataPrevInicio: "", dataPrevConclusao: "", dataConclusao: "" },
