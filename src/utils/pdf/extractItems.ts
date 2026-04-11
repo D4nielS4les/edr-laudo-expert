@@ -226,17 +226,9 @@ function buildItemSmart(codigo: string, descricao: string, vals: string[], fullT
   } else if (vals.length === 4) {
     qtdPeca = parseDecimal(vals[0]) || 1;
     valorPeca = parseDecimal(vals[1]);
-    // Heurística: se o 3º valor parece qtd (inteiro pequeno), é qtdMO
-    const third = parseDecimal(vals[2]);
-    if (third <= 100 && Number.isInteger(third)) {
-      qtdMO = third;
-      valorTotal = parseDecimal(vals[3]);
-      // Deduz valorMO do total
-      valorMO = qtdMO > 0 ? (valorTotal - qtdPeca * valorPeca) / qtdMO : 0;
-    } else {
-      valorMO = third;
-      valorTotal = parseDecimal(vals[3]);
-    }
+    // 3º valor = valorMO (total), 4º = valorTotal
+    valorMO = parseDecimal(vals[2]);
+    valorTotal = parseDecimal(vals[3]);
   } else if (vals.length === 3) {
     qtdPeca = parseDecimal(vals[0]) || 1;
     valorPeca = parseDecimal(vals[1]);
@@ -249,7 +241,7 @@ function buildItemSmart(codigo: string, descricao: string, vals: string[], fullT
     valorPeca = valorTotal;
   }
 
-  if (!valorTotal) valorTotal = (qtdPeca * valorPeca) + (qtdMO * valorMO);
+  if (!valorTotal) valorTotal = (qtdPeca * valorPeca) + valorMO;
 
   return {
     id: crypto.randomUUID(),
