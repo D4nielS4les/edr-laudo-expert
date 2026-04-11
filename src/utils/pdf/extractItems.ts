@@ -85,15 +85,14 @@ function parseCodeDescValues(lines: string[], fullText: string) {
     const desc = rest.substring(0, firstNumIdx).trim();
     if (desc.length < 2) continue;
     
-    // Mapeia valores: último = total, penúltimo = unitário, ante-penúltimo = quantidade
+    // Mapeia valores conforme quantidade de colunas numéricas encontradas
+    // 5 cols: qtdPeca, valorPeca, qtdMO, valorMO, valorTotal
+    // 4 cols: qtdPeca, valorPeca, valorMO, valorTotal (ou qtdPeca, valorPeca, qtdMO, valorTotal)
+    // 3 cols: qtd, valorUnit, valorTotal
+    // 2 cols: valorUnit, valorTotal
+    // 1 col:  valorTotal
     const vals = nums.map(n => n[0]);
-    if (vals.length >= 3) {
-      items.push(buildItem(codigo, desc, vals[vals.length - 3], vals[vals.length - 2], vals[vals.length - 1], fullText));
-    } else if (vals.length === 2) {
-      items.push(buildItem(codigo, desc, '1,00', vals[0], vals[1], fullText));
-    } else {
-      items.push(buildItem(codigo, desc, '1,00', vals[0], vals[0], fullText));
-    }
+    items.push(buildItemSmart(codigo, desc, vals, fullText));
   }
   return items;
 }
