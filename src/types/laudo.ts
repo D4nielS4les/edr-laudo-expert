@@ -2,6 +2,7 @@ export interface DadosCliente {
   solicitante: string;
   empresa: string;
   clienteFinal: string;
+  cpfCnpj: string;
   agendamento: string;
   endereco: string;
   bairro: string;
