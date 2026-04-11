@@ -206,16 +206,50 @@ function detectImpostos(line: string): { ipi: number; icms: number } {
   };
 }
 
-// --- Builder ---
+/**
+ * Distribui valores numéricos nas colunas corretas baseado na quantidade encontrada.
+ * 5 vals: qtdPeca, valorPeca, qtdMO, valorMO, valorTotal
+ * 4 vals: qtdPeca, valorPeca, qtdMO/valorMO, valorTotal
+ * 3 vals: qtd, valorUnit, valorTotal
+ * 2 vals: valorUnit, valorTotal
+ * 1 val:  valorTotal
+ */
+function buildItemSmart(codigo: string, descricao: string, vals: string[], fullText: string) {
+  let qtdPeca = 1, valorPeca = 0, qtdMO = 0, valorMO = 0, valorTotal = 0;
 
-function buildItem(
-  codigo: string, descricao: string,
-  qtdStr: string, valorUnitStr: string, valorTotalStr: string,
-  fullText: string
-) {
-  const qtd = parseDecimal(qtdStr) || 1;
-  const valorUnit = parseDecimal(valorUnitStr);
-  const valorTotal = parseDecimal(valorTotalStr);
+  if (vals.length >= 5) {
+    qtdPeca = parseDecimal(vals[vals.length - 5]) || 1;
+    valorPeca = parseDecimal(vals[vals.length - 4]);
+    qtdMO = parseDecimal(vals[vals.length - 3]);
+    valorMO = parseDecimal(vals[vals.length - 2]);
+    valorTotal = parseDecimal(vals[vals.length - 1]);
+  } else if (vals.length === 4) {
+    qtdPeca = parseDecimal(vals[0]) || 1;
+    valorPeca = parseDecimal(vals[1]);
+    // Heurística: se o 3º valor parece qtd (inteiro pequeno), é qtdMO
+    const third = parseDecimal(vals[2]);
+    if (third <= 100 && Number.isInteger(third)) {
+      qtdMO = third;
+      valorTotal = parseDecimal(vals[3]);
+      // Deduz valorMO do total
+      valorMO = qtdMO > 0 ? (valorTotal - qtdPeca * valorPeca) / qtdMO : 0;
+    } else {
+      valorMO = third;
+      valorTotal = parseDecimal(vals[3]);
+    }
+  } else if (vals.length === 3) {
+    qtdPeca = parseDecimal(vals[0]) || 1;
+    valorPeca = parseDecimal(vals[1]);
+    valorTotal = parseDecimal(vals[2]);
+  } else if (vals.length === 2) {
+    valorPeca = parseDecimal(vals[0]);
+    valorTotal = parseDecimal(vals[1]);
+  } else if (vals.length === 1) {
+    valorTotal = parseDecimal(vals[0]);
+    valorPeca = valorTotal;
+  }
+
+  if (!valorTotal) valorTotal = (qtdPeca * valorPeca) + (qtdMO * valorMO);
 
   return {
     id: crypto.randomUUID(),
@@ -224,13 +258,21 @@ function buildItem(
     descricao: descricao.replace(/\s+/g, ' ').trim(),
     acao: detectAcao(descricao),
     statusItem: detectStatusItem(descricao),
-    qtdPeca: qtd,
-    valorPeca: valorUnit,
-    qtdMaoObra: 0,
-    valorMaoObra: 0,
-    valorTotal: valorTotal || (qtd * valorUnit),
+    qtdPeca,
+    valorPeca,
+    qtdMaoObra: qtdMO,
+    valorMaoObra: valorMO,
+    valorTotal,
     impostos: detectImpostos(descricao),
     status: 'pendente' as const,
     justificativa: '',
   };
+}
+
+function buildItem(
+  codigo: string, descricao: string,
+  qtdStr: string, valorUnitStr: string, valorTotalStr: string,
+  fullText: string
+) {
+  return buildItemSmart(codigo, descricao, [qtdStr, valorUnitStr, valorTotalStr], fullText);
 }
