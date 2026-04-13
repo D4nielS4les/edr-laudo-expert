@@ -80,8 +80,8 @@ export function TabHome() {
         analise: {
           itensOrcamento: data.itens || [],
           causaRaiz: '',
-          historicoManutencao: '',
-          relatoMotorista: '',
+          historicoManutencao: data.relatos?.relatoOficina || '',
+          relatoMotorista: data.relatos?.relatoMotorista || '',
         },
         dataLaudo: new Date().toISOString().split("T")[0],
       });
