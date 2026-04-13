@@ -165,7 +165,7 @@ function parseTicketLog(lines: string[], fullText: string) {
       valorTotal = parseDecimal(vals[0]);
     }
 
-    if (!valorTotal) valorTotal = (qtdPeca * valorPeca) + valorMO;
+    if (!valorTotal) valorTotal = valorPeca + valorMO;
 
     items.push(buildItemFull(codigo, grupo, descricao, acao, statusItem, qtdPeca, valorPeca, qtdMO, valorMO, valorTotal, { ipi: 0, icms: 0 }));
   }
