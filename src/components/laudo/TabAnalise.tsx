@@ -46,7 +46,7 @@ export function TabAnalise() {
       itensOrcamento: itensOrcamento.map(item => {
         if (item.id !== id) return item;
         const updated = { ...item, ...updates };
-        updated.valorTotal = (updated.qtdPeca * updated.valorPeca) + updated.valorMaoObra;
+        updated.valorTotal = updated.valorPeca + updated.valorMaoObra;
         return updated;
       }),
     });
@@ -56,7 +56,7 @@ export function TabAnalise() {
     updateAnalise({ itensOrcamento: itensOrcamento.filter(i => i.id !== id) });
   };
 
-  const subtotalPecas = itensOrcamento.reduce((s, i) => s + (i.qtdPeca * i.valorPeca), 0);
+  const subtotalPecas = itensOrcamento.reduce((s, i) => s + i.valorPeca, 0);
   const subtotalMaoObra = itensOrcamento.reduce((s, i) => s + i.valorMaoObra, 0);
   const totalGeral = itensOrcamento.reduce((s, i) => s + i.valorTotal, 0);
 
