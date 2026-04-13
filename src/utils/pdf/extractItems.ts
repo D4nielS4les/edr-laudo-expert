@@ -383,7 +383,7 @@ function buildItemSmart(codigo: string, descricao: string, vals: string[], fullT
     valorPeca = valorTotal;
   }
 
-  if (!valorTotal) valorTotal = (qtdPeca * valorPeca) + valorMO;
+  if (!valorTotal) valorTotal = valorPeca + valorMO;
 
   return buildItemFull(
     codigo,
