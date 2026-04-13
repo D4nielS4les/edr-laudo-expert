@@ -92,7 +92,7 @@ export function parseXMLOrcamento(xmlContent: string) {
     let valorTotal = parseBRDecimal(findField(block, ['ValorTotal', 'valor_total', 'Total', 'total', 'Subtotal', 'subtotal']));
     
     if (!valorTotal) {
-      valorTotal = (qtdPeca * valorPeca) + (qtdMaoObra * valorMaoObra);
+      valorTotal = valorPeca + valorMaoObra;
     }
 
     return {
