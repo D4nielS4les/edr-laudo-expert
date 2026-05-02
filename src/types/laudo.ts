@@ -59,8 +59,18 @@ export interface ItemOrcamento {
   status: 'pendente' | 'aprovado' | 'reprovado';
 }
 
+export interface GrupoAnalise {
+  id: string;
+  nome: string;
+  itemIds: string[];
+  justificativa: string;
+  status: 'pendente' | 'aprovado' | 'reprovado';
+}
+
 export interface DadosAnalise {
   itensOrcamento: ItemOrcamento[];
+  gruposAnalise?: GrupoAnalise[];
+  ordemItens?: string[]; // ordem dos blocos: pode conter ids de itens (avulsos) e ids de grupos prefixados com "grupo:"
   causaRaiz: string;
   historicoManutencao: string;
   relatoMotorista: string;
