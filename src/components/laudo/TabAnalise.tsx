@@ -317,11 +317,10 @@ function ItemCard({ idx, item, open, onToggle, onUpdate, onRemove }: ItemCardPro
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
 
   return (
+    <div ref={setNodeRef} style={style}>
     <Collapsible
       open={open}
       onOpenChange={onToggle}
-      ref={setNodeRef as any}
-      style={style}
       className="border border-border rounded-lg overflow-hidden bg-card"
     >
       <div className="flex items-center justify-between p-4 bg-muted/30 hover:bg-muted/50 transition-colors">
@@ -365,6 +364,7 @@ function ItemCard({ idx, item, open, onToggle, onUpdate, onRemove }: ItemCardPro
         <ItemFields item={item} onUpdate={onUpdate} />
       </CollapsibleContent>
     </Collapsible>
+    </div>
   );
 }
 
@@ -392,11 +392,10 @@ function GrupoCard({ idx, grupo, itens, open, onToggle, onUpdateGrupo, onRemover
   const total = totalPeca + totalMO;
 
   return (
+    <div ref={setNodeRef} style={style}>
     <Collapsible
       open={open}
       onOpenChange={onToggle}
-      ref={setNodeRef as any}
-      style={style}
       className={cn(
         "border-2 rounded-lg overflow-hidden bg-card transition-colors",
         isOver ? "border-primary ring-2 ring-primary/30" : "border-primary/40"
@@ -488,6 +487,7 @@ function GrupoCard({ idx, grupo, itens, open, onToggle, onUpdateGrupo, onRemover
         />
       </CollapsibleContent>
     </Collapsible>
+    </div>
   );
 }
 
