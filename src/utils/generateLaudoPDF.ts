@@ -2,6 +2,8 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { LaudoPericial } from "@/types/laudo";
 import edrLogoUrl from "@/assets/edr-logo.png";
+import robotoRegularUrl from "@/assets/fonts/Roboto-Regular.ttf?url";
+import robotoBoldUrl from "@/assets/fonts/Roboto-Bold.ttf?url";
 
 const NAVY: [number, number, number] = [27, 42, 74];    // #1B2A4A
 const BLUE: [number, number, number] = [51, 102, 153];  // accent
@@ -91,9 +93,41 @@ async function loadLogoBase64(): Promise<string> {
   });
 }
 
+async function fetchFontBase64(url: string): Promise<string> {
+  const res = await fetch(url);
+  const buf = await res.arrayBuffer();
+  let binary = "";
+  const bytes = new Uint8Array(buf);
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
+  }
+  return btoa(binary);
+}
+
+async function registerRoboto(doc: jsPDF) {
+  try {
+    const [reg, bold] = await Promise.all([
+      fetchFontBase64(robotoRegularUrl),
+      fetchFontBase64(robotoBoldUrl),
+    ]);
+    doc.addFileToVFS("Roboto-Regular.ttf", reg);
+    doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+    doc.addFileToVFS("Roboto-Bold.ttf", bold);
+    doc.addFont("Roboto-Bold.ttf", "Roboto", "bold");
+    doc.setFont("Roboto", "normal");
+  } catch (e) {
+    console.warn("Falha ao carregar fonte Roboto, usando Helvetica padrão.", e);
+  }
+}
+
 export async function generateLaudoPDF(laudo: LaudoPericial) {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   let pageNum = 1;
+
+  // Embed Roboto so the PDF survives external compression / signing without
+  // glyph spacing corruption (Helvetica is referenced by name, not embedded).
+  await registerRoboto(doc);
 
   // Load logo
   let logoBase64: string | null = null;
