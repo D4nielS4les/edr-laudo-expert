@@ -21,9 +21,9 @@ function addHeader(doc: jsPDF, pageNum: number) {
   doc.rect(0, 0, PAGE_W, 18, "F");
   doc.setFontSize(9);
   doc.setTextColor(...WHITE);
-  doc.setFont("helvetica", "bold");
+  doc.setFont("Roboto", "bold");
   doc.text("EDR", MARGIN, 12);
-  doc.setFont("helvetica", "normal");
+  doc.setFont("Roboto", "normal");
   doc.setFontSize(7);
   doc.text("INSPEÇÕES E REGULAÇÕES DE SINISTROS", MARGIN + 14, 12);
 }
@@ -53,10 +53,10 @@ function sectionTitle(doc: jsPDF, title: string, y: number): number {
   doc.rect(MARGIN, y, CONTENT_W, 8, "F");
   doc.setFontSize(11);
   doc.setTextColor(...WHITE);
-  doc.setFont("helvetica", "bold");
+  doc.setFont("Roboto", "bold");
   doc.text(title, MARGIN + 4, y + 5.5);
   doc.setTextColor(0, 0, 0);
-  doc.setFont("helvetica", "normal");
+  doc.setFont("Roboto", "normal");
   return y + 14;
 }
 
@@ -156,7 +156,7 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
   } else {
     doc.setFontSize(28);
     doc.setTextColor(...NAVY);
-    doc.setFont("helvetica", "bold");
+    doc.setFont("Roboto", "bold");
     doc.text("EDR", PAGE_W / 2, boxY + 25, { align: "center" });
   }
   doc.setFontSize(9);
@@ -171,12 +171,12 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
   // Title
   doc.setFontSize(18);
   doc.setTextColor(...NAVY);
-  doc.setFont("helvetica", "bold");
+  doc.setFont("Roboto", "bold");
   doc.text("Parecer Técnico: Automotivo", PAGE_W / 2, boxY + 55, { align: "center" });
 
   // Info fields
   doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
+  doc.setFont("Roboto", "normal");
   doc.setTextColor(60, 60, 60);
   const infoY = boxY + 72;
   const infoLines = [
@@ -191,9 +191,9 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
   ];
   infoLines.forEach(([label, value], i) => {
     const ly = infoY + i * 10;
-    doc.setFont("helvetica", "bold");
+    doc.setFont("Roboto", "bold");
     doc.text(label, boxX + 20, ly);
-    doc.setFont("helvetica", "normal");
+    doc.setFont("Roboto", "normal");
     doc.text(value || "—", boxX + 55, ly);
   });
 
@@ -208,14 +208,14 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
 
   doc.setFontSize(16);
   doc.setTextColor(...NAVY);
-  doc.setFont("helvetica", "bold");
+  doc.setFont("Roboto", "bold");
   doc.text("LAUDO PERICIAL AUTOMOTIVO", PAGE_W / 2, y, { align: "center" });
   y += 12;
 
   y = sectionTitle(doc, "Sumário", y);
   doc.setFontSize(10);
   doc.setTextColor(60, 60, 60);
-  doc.setFont("helvetica", "normal");
+  doc.setFont("Roboto", "normal");
 
   const summaryItems = [
     "Informações Gerais do Processo",
@@ -273,9 +273,9 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
 
   if (laudo.analise.relatoMotorista) {
     y += 4;
-    doc.setFont("helvetica", "bold");
+    doc.setFont("Roboto", "bold");
     doc.text("Relato do Motorista:", MARGIN, y);
-    doc.setFont("helvetica", "normal");
+    doc.setFont("Roboto", "normal");
     y += 5;
     y = addWrappedText(doc, laudo.analise.relatoMotorista, MARGIN, y, CONTENT_W);
   }
@@ -352,7 +352,7 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
         const catLabel = categorias[foto.categoria] || foto.categoria;
 
         doc.setFontSize(8);
-        doc.setFont("helvetica", "bold");
+        doc.setFont("Roboto", "bold");
         doc.setTextColor(...NAVY);
         doc.text(`${catLabel}${foto.descricao ? ` - ${foto.descricao}` : ""}`, MARGIN, y);
         y += 3;
@@ -410,10 +410,10 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
     doc.setTextColor(60, 60, 60);
     doc.text(`Subtotal Peças: ${formatCurrency(subtotalPecas)}    |    Subtotal M.O.: ${formatCurrency(subtotalMO)}`, MARGIN, y);
     y += 5;
-    doc.setFont("helvetica", "bold");
+    doc.setFont("Roboto", "bold");
     doc.setTextColor(...NAVY);
     doc.text(`Total Geral: ${formatCurrency(total)}`, MARGIN, y);
-    doc.setFont("helvetica", "normal");
+    doc.setFont("Roboto", "normal");
     y += 10;
 
     // Justificativas por item
@@ -424,11 +424,11 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
         y = 28;
       }
       doc.setFontSize(9);
-      doc.setFont("helvetica", "bold");
+      doc.setFont("Roboto", "bold");
       doc.setTextColor(...NAVY);
       doc.text(`Justificativa - ${item.descricao || item.codigo}:`, MARGIN, y);
       y += 5;
-      doc.setFont("helvetica", "normal");
+      doc.setFont("Roboto", "normal");
       doc.setTextColor(60, 60, 60);
       y = addWrappedText(doc, item.justificativa, MARGIN, y, CONTENT_W, 9);
       y += 4;
@@ -448,12 +448,12 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
       const renderBlock = (titulo: string, descricao: string, fotos: { dataUrl: string; descricao?: string }[] | undefined, justificativa: string) => {
         if (y > PAGE_H - 50) { pageNum = newPage(doc, pageNum); y = 28; }
         doc.setFontSize(10);
-        doc.setFont("helvetica", "bold");
+        doc.setFont("Roboto", "bold");
         doc.setTextColor(...NAVY);
         doc.text(titulo, MARGIN, y);
         y += 5;
         if (descricao) {
-          doc.setFont("helvetica", "normal");
+          doc.setFont("Roboto", "normal");
           doc.setTextColor(60, 60, 60);
           y = addWrappedText(doc, descricao, MARGIN, y, CONTENT_W, 9);
         }
@@ -482,11 +482,11 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
         if (justificativa) {
           if (y > PAGE_H - 30) { pageNum = newPage(doc, pageNum); y = 28; }
           doc.setFontSize(9);
-          doc.setFont("helvetica", "bold");
+          doc.setFont("Roboto", "bold");
           doc.setTextColor(...NAVY);
           doc.text("Justificativa Técnica:", MARGIN, y);
           y += 5;
-          doc.setFont("helvetica", "normal");
+          doc.setFont("Roboto", "normal");
           doc.setTextColor(60, 60, 60);
           y = addWrappedText(doc, justificativa, MARGIN, y, CONTENT_W, 9);
         }
@@ -556,10 +556,10 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
   doc.setTextColor(60, 60, 60);
 
   if (laudo.conclusao.parecerTecnico) {
-    doc.setFont("helvetica", "bold");
+    doc.setFont("Roboto", "bold");
     doc.text("Parecer Técnico:", MARGIN, y);
     y += 5;
-    doc.setFont("helvetica", "normal");
+    doc.setFont("Roboto", "normal");
     y = addWrappedText(doc, laudo.conclusao.parecerTecnico, MARGIN, y, CONTENT_W);
     y += 6;
   }
@@ -591,18 +591,18 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
   doc.line(MARGIN, sigY, MARGIN + 70, sigY);
   doc.setFontSize(9);
   doc.setTextColor(...NAVY);
-  doc.setFont("helvetica", "bold");
+  doc.setFont("Roboto", "bold");
   doc.text(laudo.conclusao.analistaVistoriador || "Analista Vistoriador", MARGIN, sigY + 5);
-  doc.setFont("helvetica", "normal");
+  doc.setFont("Roboto", "normal");
   doc.setFontSize(7);
   doc.text("Analista Vistoriador", MARGIN, sigY + 9);
 
   // Right signature
   doc.line(PAGE_W - MARGIN - 70, sigY, PAGE_W - MARGIN, sigY);
   doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
+  doc.setFont("Roboto", "bold");
   doc.text(laudo.conclusao.gestorOperacoes || "Gestor de Operações", PAGE_W - MARGIN - 70, sigY + 5);
-  doc.setFont("helvetica", "normal");
+  doc.setFont("Roboto", "normal");
   doc.setFontSize(7);
   doc.text("Gestor de Operações EDR", PAGE_W - MARGIN - 70, sigY + 9);
 
