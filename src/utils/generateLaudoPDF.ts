@@ -251,8 +251,8 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
         `${laudo.dadosProcesso.respTecnico || "—"}\n${laudo.dadosProcesso.cargoRespTecnico || ""}`,
       ],
     ],
-    headStyles: { fillColor: NAVY, fontSize: 9 },
-    bodyStyles: { fontSize: 9 },
+    headStyles: { fillColor: NAVY, fontSize: 9, font: "Roboto", fontStyle: "bold" },
+    bodyStyles: { fontSize: 9, font: "Roboto", fontStyle: "normal" },
     theme: "grid",
   });
   y = (doc as any).lastAutoTable.finalY + 10;
@@ -301,8 +301,8 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
       ["Chassi", laudo.dadosVeiculo.chassi],
       ["Hodômetro", laudo.dadosVeiculo.hodometro],
     ],
-    headStyles: { fillColor: NAVY, fontSize: 9 },
-    bodyStyles: { fontSize: 9 },
+    headStyles: { fillColor: NAVY, fontSize: 9, font: "Roboto", fontStyle: "bold" },
+    bodyStyles: { fontSize: 9, font: "Roboto", fontStyle: "normal" },
     theme: "grid",
     columnStyles: { 0: { fontStyle: "bold", cellWidth: 50 } },
   });
@@ -322,8 +322,8 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
       ["Responsável", laudo.dadosOficina.responsavel],
       ["CNPJ", laudo.dadosOficina.cnpj],
     ],
-    headStyles: { fillColor: NAVY, fontSize: 9 },
-    bodyStyles: { fontSize: 9 },
+    headStyles: { fillColor: NAVY, fontSize: 9, font: "Roboto", fontStyle: "bold" },
+    bodyStyles: { fontSize: 9, font: "Roboto", fontStyle: "normal" },
     theme: "grid",
     columnStyles: { 0: { fontStyle: "bold", cellWidth: 50 } },
   });
@@ -390,8 +390,8 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
       margin: { left: MARGIN, right: MARGIN },
       head: [["#", "Cód.", "Descrição", "Qtd P.", "Vlr Peça", "Qtd MO", "Vlr MO", "Total", "Status"]],
       body: tableBody,
-      headStyles: { fillColor: NAVY, fontSize: 7 },
-      bodyStyles: { fontSize: 7 },
+      headStyles: { fillColor: NAVY, fontSize: 7, font: "Roboto", fontStyle: "bold" },
+      bodyStyles: { fontSize: 7, font: "Roboto", fontStyle: "normal" },
       theme: "grid",
       columnStyles: {
         0: { cellWidth: 8 },
