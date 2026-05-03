@@ -401,6 +401,92 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
     }
   }
 
+  // ===== ITENS REPROVADOS (descrição + fotos + justificativa) =====
+  {
+    const itensReprovados = laudo.analise.itensOrcamento.filter(i => i.status === "reprovado");
+    const gruposReprovados = (laudo.analise.gruposAnalise ?? []).filter(g => g.status === "reprovado");
+
+    if (itensReprovados.length > 0 || gruposReprovados.length > 0) {
+      pageNum = newPage(doc, pageNum);
+      y = 28;
+      y = sectionTitle(doc, "Itens Reprovados", y);
+
+      const renderBlock = (titulo: string, descricao: string, fotos: { dataUrl: string; descricao?: string }[] | undefined, justificativa: string) => {
+        if (y > PAGE_H - 50) { pageNum = newPage(doc, pageNum); y = 28; }
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...NAVY);
+        doc.text(titulo, MARGIN, y);
+        y += 5;
+        if (descricao) {
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(60, 60, 60);
+          y = addWrappedText(doc, descricao, MARGIN, y, CONTENT_W, 9);
+        }
+
+        if (fotos && fotos.length > 0) {
+          const imgW = 55;
+          const imgH = 40;
+          const gap = 5;
+          let x = MARGIN;
+          for (const foto of fotos) {
+            if (x + imgW > MARGIN + CONTENT_W) { x = MARGIN; y += imgH + 8; }
+            if (y + imgH > PAGE_H - 25) { pageNum = newPage(doc, pageNum); y = 28; x = MARGIN; }
+            try {
+              doc.addImage(foto.dataUrl, "JPEG", x, y, imgW, imgH);
+              if (foto.descricao) {
+                doc.setFontSize(7);
+                doc.setTextColor(...GRAY);
+                doc.text(doc.splitTextToSize(foto.descricao, imgW)[0] ?? "", x, y + imgH + 3);
+              }
+            } catch { /* ignore broken image */ }
+            x += imgW + gap;
+          }
+          y += imgH + 8;
+        }
+
+        if (justificativa) {
+          if (y > PAGE_H - 30) { pageNum = newPage(doc, pageNum); y = 28; }
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(...NAVY);
+          doc.text("Justificativa Técnica:", MARGIN, y);
+          y += 5;
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(60, 60, 60);
+          y = addWrappedText(doc, justificativa, MARGIN, y, CONTENT_W, 9);
+        }
+        y += 6;
+      };
+
+      for (const item of itensReprovados) {
+        renderBlock(
+          `${item.codigo ? item.codigo + " - " : ""}${item.descricao || "Item"}`,
+          "",
+          item.fotos,
+          item.justificativa,
+        );
+      }
+
+      for (const grupo of gruposReprovados) {
+        const itensDoGrupo = grupo.itemIds
+          .map(id => laudo.analise.itensOrcamento.find(i => i.id === id))
+          .filter((x): x is typeof laudo.analise.itensOrcamento[number] => !!x);
+        const descricao = itensDoGrupo.map(i => `• ${i.codigo ? i.codigo + " - " : ""}${i.descricao}`).join("\n");
+        const fotosCombinadas = [
+          ...(grupo.fotos ?? []),
+          ...itensDoGrupo.flatMap(i => i.fotos ?? []),
+        ];
+        renderBlock(
+          `Categoria: ${grupo.nome || "Sem nome"}`,
+          descricao,
+          fotosCombinadas,
+          grupo.justificativa,
+        );
+      }
+    }
+  }
+
   // ===== CAUSA RAIZ =====
   if (laudo.analise.causaRaiz) {
     if (y > PAGE_H - 60) {

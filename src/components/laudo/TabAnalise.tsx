@@ -4,11 +4,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, ChevronDown, ChevronUp, GripVertical, Layers, Unlink } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronUp, GripVertical, Layers, Unlink, ImagePlus, X } from "lucide-react";
 import { useLaudo } from "@/contexts/LaudoContext";
-import type { ItemOrcamento, GrupoAnalise } from "@/types/laudo";
+import type { ItemOrcamento, GrupoAnalise, FotoItem } from "@/types/laudo";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   DndContext,
@@ -480,6 +480,12 @@ function GrupoCard({ idx, grupo, itens, open, onToggle, onUpdateGrupo, onRemover
             rows={4}
           />
         </div>
+
+        <FotosManager
+          fotos={grupo.fotos ?? []}
+          onChange={(fotos) => onUpdateGrupo({ fotos })}
+          label="Fotos da categoria"
+        />
       </CollapsibleContent>
     </Collapsible>
   );
@@ -542,7 +548,85 @@ function ItemFields({ item, onUpdate, hideStatus }: { item: ItemOrcamento; onUpd
             <Label className="text-xs">Justificativa Técnica</Label>
             <Textarea value={item.justificativa} onChange={e => onUpdate({ justificativa: e.target.value })} placeholder="Descreva a justificativa técnica para este item..." rows={3} />
           </div>
+          <FotosManager
+            fotos={item.fotos ?? []}
+            onChange={(fotos) => onUpdate({ fotos })}
+            label="Fotos do item"
+          />
         </>
+      )}
+    </div>
+  );
+}
+
+/* =================== FotosManager =================== */
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function FotosManager({
+  fotos,
+  onChange,
+  label,
+}: {
+  fotos: FotoItem[];
+  onChange: (fotos: FotoItem[]) => void;
+  label: string;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const novas: FotoItem[] = [];
+    for (const f of Array.from(files)) {
+      const dataUrl = await fileToDataUrl(f);
+      novas.push({ id: crypto.randomUUID(), dataUrl, descricao: "" });
+    }
+    onChange([...fotos, ...novas]);
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
+  const removerFoto = (id: string) => onChange(fotos.filter(f => f.id !== id));
+  const updateDesc = (id: string, descricao: string) =>
+    onChange(fotos.map(f => f.id === id ? { ...f, descricao } : f));
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <Label className="text-xs">{label}</Label>
+        <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => inputRef.current?.click()}>
+          <ImagePlus className="h-3 w-3" /> Adicionar foto
+        </Button>
+        <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={e => handleFiles(e.target.files)} />
+      </div>
+      {fotos.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+          {fotos.map(f => (
+            <div key={f.id} className="relative group border border-border rounded-md overflow-hidden bg-muted/20">
+              <img src={f.dataUrl} alt={f.descricao || "Foto do item"} className="w-full h-24 object-cover" />
+              <button
+                type="button"
+                onClick={() => removerFoto(f.id)}
+                className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                aria-label="Remover foto"
+              >
+                <X className="h-3 w-3" />
+              </button>
+              <Input
+                value={f.descricao ?? ""}
+                onChange={e => updateDesc(f.id, e.target.value)}
+                placeholder="Descrição..."
+                className="rounded-none border-0 border-t text-xs h-7"
+              />
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

@@ -42,6 +42,12 @@ export interface FotoVistoria {
   descricao: string;
 }
 
+export interface FotoItem {
+  id: string;
+  dataUrl: string;
+  descricao?: string;
+}
+
 export interface ItemOrcamento {
   id: string;
   codigo: string;
@@ -57,6 +63,7 @@ export interface ItemOrcamento {
   impostos: { ipi: number; icms: number };
   justificativa: string;
   status: 'pendente' | 'aprovado' | 'reprovado';
+  fotos?: FotoItem[];
 }
 
 export interface GrupoAnalise {
@@ -65,6 +72,7 @@ export interface GrupoAnalise {
   itemIds: string[];
   justificativa: string;
   status: 'pendente' | 'aprovado' | 'reprovado';
+  fotos?: FotoItem[];
 }
 
 export interface DadosAnalise {
