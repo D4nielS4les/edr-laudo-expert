@@ -4,11 +4,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, ChevronDown, ChevronUp, GripVertical, Layers, Unlink } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronUp, GripVertical, Layers, Unlink, ImagePlus, X } from "lucide-react";
 import { useLaudo } from "@/contexts/LaudoContext";
-import type { ItemOrcamento, GrupoAnalise } from "@/types/laudo";
+import type { ItemOrcamento, GrupoAnalise, FotoItem } from "@/types/laudo";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   DndContext,
@@ -480,6 +480,12 @@ function GrupoCard({ idx, grupo, itens, open, onToggle, onUpdateGrupo, onRemover
             rows={4}
           />
         </div>
+
+        <FotosManager
+          fotos={grupo.fotos ?? []}
+          onChange={(fotos) => onUpdateGrupo({ fotos })}
+          label="Fotos da categoria"
+        />
       </CollapsibleContent>
     </Collapsible>
   );
