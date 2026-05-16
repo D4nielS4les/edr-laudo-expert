@@ -435,6 +435,113 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
     }
   }
 
+  // ===== ITENS AGRUPADOS (todos os grupos, com itens, fotos e parecer) =====
+  {
+    const grupos = laudo.analise.gruposAnalise ?? [];
+    if (grupos.length > 0) {
+      pageNum = newPage(doc, pageNum);
+      y = 28;
+      y = sectionTitle(doc, "Itens Agrupados", y);
+
+      const statusLabel = (s: string) =>
+        s === "aprovado" ? "Aprovado" : s === "reprovado" ? "Reprovado" : "Pendente";
+      const statusColor = (s: string): [number, number, number] =>
+        s === "aprovado" ? [34, 139, 70] : s === "reprovado" ? [180, 35, 35] : [150, 120, 30];
+
+      for (const grupo of grupos) {
+        if (y > PAGE_H - 60) { pageNum = newPage(doc, pageNum); y = 28; }
+
+        // Título do grupo
+        doc.setFontSize(11);
+        doc.setFont("Roboto", "bold");
+        doc.setTextColor(...NAVY);
+        doc.text(`Grupo: ${grupo.nome || "Sem nome"}`, MARGIN, y);
+
+        // Badge de parecer
+        const label = statusLabel(grupo.status);
+        const [r, g, b] = statusColor(grupo.status);
+        doc.setFontSize(9);
+        doc.setTextColor(r, g, b);
+        doc.text(`Parecer: ${label}`, PAGE_W - MARGIN, y, { align: "right" });
+        y += 6;
+
+        // Itens do grupo
+        const itensDoGrupo = grupo.itemIds
+          .map(id => laudo.analise.itensOrcamento.find(i => i.id === id))
+          .filter((x): x is typeof laudo.analise.itensOrcamento[number] => !!x);
+
+        if (itensDoGrupo.length > 0) {
+          autoTable(doc, {
+            startY: y,
+            margin: { left: MARGIN, right: MARGIN },
+            head: [["#", "Cód.", "Descrição", "Qtd P.", "Vlr Peça", "Qtd MO", "Vlr MO", "Total"]],
+            body: itensDoGrupo.map((item, idx) => [
+              String(idx + 1),
+              item.codigo,
+              item.descricao,
+              String(item.qtdPeca),
+              formatCurrency(item.valorPeca),
+              String(item.qtdMaoObra),
+              formatCurrency(item.valorMaoObra),
+              formatCurrency(item.valorTotal),
+            ]),
+            headStyles: { fillColor: NAVY, fontSize: 7, font: "Roboto", fontStyle: "bold" },
+            bodyStyles: { fontSize: 7, font: "Roboto", fontStyle: "normal" },
+            theme: "grid",
+            columnStyles: { 0: { cellWidth: 8 }, 2: { cellWidth: 50 } },
+          });
+          y = (doc as any).lastAutoTable.finalY + 4;
+
+          const totalGrupo = itensDoGrupo.reduce((s, i) => s + (i.valorTotal || 0), 0);
+          doc.setFontSize(9);
+          doc.setFont("Roboto", "bold");
+          doc.setTextColor(...NAVY);
+          doc.text(`Total do Grupo: ${formatCurrency(totalGrupo)}`, PAGE_W - MARGIN, y, { align: "right" });
+          doc.setFont("Roboto", "normal");
+          y += 6;
+        }
+
+        // Fotos do grupo + fotos dos itens vinculados
+        const fotosCombinadas = [
+          ...(grupo.fotos ?? []),
+          ...itensDoGrupo.flatMap(i => i.fotos ?? []),
+        ];
+        if (fotosCombinadas.length > 0) {
+          const imgW = 55, imgH = 40, gap = 5;
+          let x = MARGIN;
+          for (const foto of fotosCombinadas) {
+            if (x + imgW > MARGIN + CONTENT_W) { x = MARGIN; y += imgH + 8; }
+            if (y + imgH > PAGE_H - 25) { pageNum = newPage(doc, pageNum); y = 28; x = MARGIN; }
+            try {
+              doc.addImage(foto.dataUrl, "JPEG", x, y, imgW, imgH);
+              if (foto.descricao) {
+                doc.setFontSize(7);
+                doc.setTextColor(...GRAY);
+                doc.text(doc.splitTextToSize(foto.descricao, imgW)[0] ?? "", x, y + imgH + 3);
+              }
+            } catch { /* ignore */ }
+            x += imgW + gap;
+          }
+          y += imgH + 8;
+        }
+
+        // Parecer / justificativa
+        if (grupo.justificativa) {
+          if (y > PAGE_H - 30) { pageNum = newPage(doc, pageNum); y = 28; }
+          doc.setFontSize(9);
+          doc.setFont("Roboto", "bold");
+          doc.setTextColor(...NAVY);
+          doc.text("Parecer Técnico do Grupo:", MARGIN, y);
+          y += 5;
+          doc.setFont("Roboto", "normal");
+          doc.setTextColor(60, 60, 60);
+          y = addWrappedText(doc, grupo.justificativa, MARGIN, y, CONTENT_W, 9);
+        }
+        y += 8;
+      }
+    }
+  }
+
   // ===== ITENS REPROVADOS (descrição + fotos + justificativa) =====
   {
     const itensReprovados = laudo.analise.itensOrcamento.filter(i => i.status === "reprovado");
