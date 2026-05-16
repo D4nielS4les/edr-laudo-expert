@@ -658,6 +658,145 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
   pageNum = newPage(doc, pageNum);
   y = 28;
 
+  // ===== RESUMO EXECUTIVO COM GRÁFICOS =====
+  {
+    y = sectionTitle(doc, "Resumo da Análise", y);
+
+    const itens = laudo.analise.itensOrcamento;
+    const totalItens = itens.length;
+    const aprovados = itens.filter(i => i.status === "aprovado");
+    const reprovados = itens.filter(i => i.status === "reprovado");
+    const pendentes = itens.filter(i => i.status === "pendente");
+
+    const vlrAprovado = aprovados.reduce((s, i) => s + (i.valorTotal || 0), 0);
+    const vlrReprovado = reprovados.reduce((s, i) => s + (i.valorTotal || 0), 0);
+    const vlrPendente = pendentes.reduce((s, i) => s + (i.valorTotal || 0), 0);
+    const vlrTotal = vlrAprovado + vlrReprovado + vlrPendente;
+    const economizado = vlrReprovado;
+
+    // KPI cards
+    const cardW = (CONTENT_W - 10) / 3;
+    const cardH = 22;
+    const drawCard = (x: number, title: string, value: string, color: [number, number, number]) => {
+      doc.setFillColor(...LIGHT_BG);
+      doc.roundedRect(x, y, cardW, cardH, 2, 2, "F");
+      doc.setFillColor(...color);
+      doc.rect(x, y, 2, cardH, "F");
+      doc.setFontSize(8);
+      doc.setTextColor(...GRAY);
+      doc.setFont("Roboto", "normal");
+      doc.text(title, x + 5, y + 6);
+      doc.setFontSize(12);
+      doc.setTextColor(...NAVY);
+      doc.setFont("Roboto", "bold");
+      doc.text(value, x + 5, y + 16);
+    };
+    drawCard(MARGIN, "Total Orçado", formatCurrency(vlrTotal), NAVY);
+    drawCard(MARGIN + cardW + 5, "Aprovado", formatCurrency(vlrAprovado), [34, 139, 70]);
+    drawCard(MARGIN + (cardW + 5) * 2, "Economizado (Glosado)", formatCurrency(economizado), [180, 35, 35]);
+    y += cardH + 8;
+
+    // ---- Gráfico de barras: quantidade de itens por status ----
+    doc.setFontSize(10);
+    doc.setFont("Roboto", "bold");
+    doc.setTextColor(...NAVY);
+    doc.text("Itens por Status (quantidade)", MARGIN, y);
+    y += 4;
+
+    const chartX = MARGIN;
+    const chartY = y;
+    const chartW = CONTENT_W;
+    const chartH = 50;
+    const baseY = chartY + chartH;
+
+    // axes
+    doc.setDrawColor(180, 180, 180);
+    doc.setLineWidth(0.2);
+    doc.line(chartX, baseY, chartX + chartW, baseY);
+
+    const bars = [
+      { label: "Aprovados", value: aprovados.length, color: [34, 139, 70] as [number, number, number] },
+      { label: "Reprovados", value: reprovados.length, color: [180, 35, 35] as [number, number, number] },
+      { label: "Pendentes", value: pendentes.length, color: [200, 160, 40] as [number, number, number] },
+    ];
+    const maxVal = Math.max(1, ...bars.map(b => b.value));
+    const barW = 25;
+    const slot = chartW / bars.length;
+    bars.forEach((b, i) => {
+      const h = (b.value / maxVal) * (chartH - 8);
+      const bx = chartX + slot * i + (slot - barW) / 2;
+      const by = baseY - h;
+      doc.setFillColor(...b.color);
+      doc.rect(bx, by, barW, h, "F");
+      doc.setFontSize(9);
+      doc.setTextColor(...NAVY);
+      doc.setFont("Roboto", "bold");
+      doc.text(String(b.value), bx + barW / 2, by - 1.5, { align: "center" });
+      doc.setFont("Roboto", "normal");
+      doc.setTextColor(60, 60, 60);
+      doc.setFontSize(8);
+      doc.text(b.label, bx + barW / 2, baseY + 5, { align: "center" });
+    });
+    y = baseY + 12;
+
+    // ---- Gráfico de barras horizontais: valores ----
+    doc.setFontSize(10);
+    doc.setFont("Roboto", "bold");
+    doc.setTextColor(...NAVY);
+    doc.text("Distribuição do Orçamento (R$)", MARGIN, y);
+    y += 4;
+
+    const vals = [
+      { label: "Aprovado", value: vlrAprovado, color: [34, 139, 70] as [number, number, number] },
+      { label: "Reprovado (Glosa)", value: vlrReprovado, color: [180, 35, 35] as [number, number, number] },
+      { label: "Pendente", value: vlrPendente, color: [200, 160, 40] as [number, number, number] },
+    ];
+    const maxV = Math.max(1, ...vals.map(v => v.value));
+    const labelW = 45;
+    const valueW = 35;
+    const trackW = CONTENT_W - labelW - valueW - 4;
+    const rowH = 7;
+    vals.forEach((v) => {
+      doc.setFontSize(9);
+      doc.setFont("Roboto", "normal");
+      doc.setTextColor(60, 60, 60);
+      doc.text(v.label, MARGIN, y + 5);
+      // track
+      doc.setFillColor(230, 233, 240);
+      doc.rect(MARGIN + labelW, y, trackW, rowH, "F");
+      // fill
+      const w = (v.value / maxV) * trackW;
+      doc.setFillColor(...v.color);
+      doc.rect(MARGIN + labelW, y, w, rowH, "F");
+      // value
+      doc.setFont("Roboto", "bold");
+      doc.setTextColor(...NAVY);
+      doc.text(formatCurrency(v.value), MARGIN + CONTENT_W, y + 5, { align: "right" });
+      y += rowH + 3;
+    });
+
+    y += 4;
+    doc.setFillColor(...NAVY);
+    doc.roundedRect(MARGIN, y, CONTENT_W, 14, 2, 2, "F");
+    doc.setFontSize(10);
+    doc.setFont("Roboto", "bold");
+    doc.setTextColor(...WHITE);
+    doc.text(`Total de itens analisados: ${totalItens}`, MARGIN + 4, y + 9);
+    const pctEcon = vlrTotal > 0 ? ((economizado / vlrTotal) * 100).toFixed(1) : "0.0";
+    doc.text(
+      `Total economizado: ${formatCurrency(economizado)}  (${pctEcon}%)`,
+      PAGE_W - MARGIN - 4, y + 9, { align: "right" }
+    );
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("Roboto", "normal");
+    y += 20;
+
+    if (y > PAGE_H - 60) {
+      pageNum = newPage(doc, pageNum);
+      y = 28;
+    }
+  }
+
   y = sectionTitle(doc, "Conclusões", y);
   doc.setFontSize(10);
   doc.setTextColor(60, 60, 60);
