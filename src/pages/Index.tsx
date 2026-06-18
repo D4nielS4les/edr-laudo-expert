@@ -82,7 +82,11 @@ function LaudoApp() {
       </div>
 
       <footer className="gradient-hero text-primary-foreground/60 text-xs text-center py-3">
-        EDR Inspeções e Regulações de Sinistros © {new Date().getFullYear()} — Sistema de Gestão de Laudos Periciais
+        <div>EDR Inspeções e Regulações de Sinistros © {new Date().getFullYear()} — Sistema de Gestão de Laudos Periciais</div>
+        <div className="mt-1 flex justify-center gap-4">
+          <a href="/privacidade" className="hover:text-primary-foreground underline">Política de Privacidade</a>
+          <a href="/termos" className="hover:text-primary-foreground underline">Termos de Uso</a>
+        </div>
       </footer>
     </div>
   );
