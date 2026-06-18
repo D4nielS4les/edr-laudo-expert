@@ -6,18 +6,16 @@ import {
 } from "recharts";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Truck, Clock, DollarSign, Wrench, AlertCircle, FileSearch, ClipboardList, FileUp, FileCode } from "lucide-react";
+import { Truck, Clock, DollarSign, Wrench, AlertCircle, FileSearch, ClipboardList, FileUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
 import { extractTextFromPDF, parseOSData } from "@/utils/pdfParser";
-import { parseXMLOrcamento } from "@/utils/xmlParser";
 import { useToast } from "@/hooks/use-toast";
 
 export function TabHome() {
   const { listaLaudos, setActiveTab, updateLaudo, novoLaudo } = useLaudo();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const xmlInputRef = useRef<HTMLInputElement>(null);
   
   const laudosFinalizados = listaLaudos.filter(l => l.status === 'finalizado');
   const laudosPendentes = listaLaudos.filter(l => l.status === 'pendente' || !l.status);
@@ -102,83 +100,6 @@ export function TabHome() {
     }
   };
 
-  const handleImportXML = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    // Reset input para permitir reimportação do mesmo arquivo
-    if (xmlInputRef.current) xmlInputRef.current.value = '';
-
-    toast({ title: "Processando XML...", description: "Extraindo informações do orçamento." });
-    try {
-      const text = await file.text();
-      console.log("XML lido, tamanho:", text.length);
-      const data = parseXMLOrcamento(text);
-      console.log("XML parsed:", JSON.stringify(data, null, 2).slice(0, 500));
-      
-      // Aplica tudo de uma vez para evitar perda por batching do React
-      updateLaudo({
-        id: crypto.randomUUID(),
-        status: 'pendente',
-        ordemServico: data.ordemServico || '',
-        dadosCliente: {
-          solicitante: data.dadosCliente.solicitante || '',
-          empresa: data.dadosCliente.empresa || '',
-          clienteFinal: data.dadosCliente.clienteFinal || '',
-          cpfCnpj: data.dadosCliente.cpfCnpj || '',
-          agendamento: data.dadosCliente.agendamento || '',
-          endereco: data.dadosCliente.endereco || '',
-          bairro: data.dadosCliente.bairro || '',
-          cidade: data.dadosCliente.cidade || '',
-          cep: data.dadosCliente.cep || '',
-          telefone: data.dadosCliente.telefone || '',
-          email: data.dadosCliente.email || '',
-        },
-        dadosVeiculo: {
-          marcaModelo: data.dadosVeiculo.marcaModelo || '',
-          anoFabricacao: data.dadosVeiculo.anoFabricacao || '',
-          anoModelo: data.dadosVeiculo.anoModelo || '',
-          placa: data.dadosVeiculo.placa || '',
-          chassi: data.dadosVeiculo.chassi || '',
-          hodometro: data.dadosVeiculo.hodometro || '',
-          motorizacao: data.dadosVeiculo.motorizacao || '',
-          cor: data.dadosVeiculo.cor || '',
-          combustivel: data.dadosVeiculo.combustivel || '',
-        },
-        dadosOS: {
-          statusOS: '',
-          tipoManutencao: '',
-          dataEmissao: '',
-          dataPrevInicio: '',
-          dataPrevConclusao: '',
-          dataConclusao: '',
-        },
-        dadosOficina: {
-          nome: data.dadosOficina.nome || '',
-          endereco: data.dadosOficina.endereco || '',
-          bairro: data.dadosOficina.bairro || '',
-          cidade: data.dadosOficina.cidade || '',
-          telefone: data.dadosOficina.telefone || '',
-          responsavel: data.dadosOficina.responsavel || '',
-          cnpj: data.dadosOficina.cnpj || '',
-        },
-        analise: {
-          itensOrcamento: data.itens,
-          causaRaiz: '',
-          historicoManutencao: '',
-          relatoMotorista: '',
-        },
-        dataLaudo: new Date().toISOString().split("T")[0],
-      });
-
-      toast({ title: "Importação XML Concluída!", description: `OS ${data.ordemServico || ''} carregada com ${data.itens.length} itens.` });
-      setActiveTab("cliente");
-    } catch (err) {
-      console.error("Erro ao importar XML:", err);
-      toast({ title: "Erro na Importação XML", description: "Não foi possível ler os dados deste arquivo XML.", variant: "destructive" });
-    }
-  };
-
   const processData = () => {
     const groups: Record<string, any> = {};
     const sortedLaudos = [...laudosFinalizados].sort((a, b) => a.dataLaudo.localeCompare(b.dataLaudo));
@@ -239,25 +160,11 @@ export function TabHome() {
             accept="application/pdf" 
             onChange={handleImportPDF} 
           />
-          <input 
-            type="file" 
-            ref={xmlInputRef} 
-            className="hidden" 
-            accept=".xml,text/xml,application/xml" 
-            onChange={handleImportXML} 
-          />
           <Button 
             onClick={() => fileInputRef.current?.click()} 
             className="gap-2 bg-accent hover:bg-accent/90"
           >
             <FileUp className="h-4 w-4" /> Importar PDF
-          </Button>
-          <Button 
-            onClick={() => xmlInputRef.current?.click()} 
-            variant="outline"
-            className="gap-2 border-accent text-accent hover:bg-accent/5"
-          >
-            <FileCode className="h-4 w-4" /> Importar XML
           </Button>
           <Button onClick={novoLaudo} variant="outline" className="gap-2">
             <ClipboardList className="h-4 w-4" /> Nova Vistoria Manual
