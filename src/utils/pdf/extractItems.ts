@@ -10,7 +10,7 @@ import { parseDecimal } from './helpers';
 const NUM_BR = /\d{1,3}(?:\.\d{3})*,\d{2}/;
 
 export function extractItensOrcamento(cleanText: string) {
-  console.log("[Parser] Texto total para itens:", cleanText.length, "chars");
+  if (import.meta.env.DEV) console.log("[Parser] Texto total para itens:", cleanText.length, "chars");
 
   const lines = cleanText.split('\n').map(l => l.trim()).filter(Boolean);
 
@@ -21,19 +21,19 @@ export function extractItensOrcamento(cleanText: string) {
   const isFacchini = /(?:VL\.?\s*UNIT\.?\s*BRUT|QUANTID|NCM|DESCRI[ÇC][ÃA]O\s*PRODUTO)/i.test(cleanText);
 
   if (isTicketLog) {
-    console.log("[Parser] Formato detectado: Ticket Log");
+    if (import.meta.env.DEV) console.log("[Parser] Formato detectado: Ticket Log");
     const items = parseTicketLog(lines, cleanText);
     if (items.length > 0) {
-      console.log(`[Parser] Ticket Log: ${items.length} itens`);
+      import.meta.env.DEV && console.log(`[Parser] Ticket Log: ${items.length} itens`);
       return items;
     }
   }
 
   if (isFacchini) {
-    console.log("[Parser] Formato detectado: Facchini");
+    if (import.meta.env.DEV) console.log("[Parser] Formato detectado: Facchini");
     const items = parseFacchini(lines, cleanText);
     if (items.length > 0) {
-      console.log(`[Parser] Facchini: ${items.length} itens`);
+      import.meta.env.DEV && console.log(`[Parser] Facchini: ${items.length} itens`);
       return items;
     }
   }
@@ -43,21 +43,21 @@ export function extractItensOrcamento(cleanText: string) {
   const secEnd = findSectionEnd(lines, secStart);
   const sectionLines = lines.slice(secStart, secEnd);
 
-  console.log(`[Parser] Seção de itens genérica: linhas ${secStart}-${secEnd} (${sectionLines.length} linhas)`);
+  import.meta.env.DEV && console.log(`[Parser] Seção de itens genérica: linhas ${secStart}-${secEnd} (${sectionLines.length} linhas)`);
 
   let items = parseCodeDescValues(sectionLines, cleanText);
-  if (items.length > 0) { console.log(`[Parser] Código+Desc+Valores: ${items.length} itens`); return items; }
+  if (items.length > 0) { import.meta.env.DEV && console.log(`[Parser] Código+Desc+Valores: ${items.length} itens`); return items; }
 
   items = parseDescValues(sectionLines, cleanText);
-  if (items.length > 0) { console.log(`[Parser] Desc+Valores: ${items.length} itens`); return items; }
+  if (items.length > 0) { import.meta.env.DEV && console.log(`[Parser] Desc+Valores: ${items.length} itens`); return items; }
 
   items = parseDescRealValues(sectionLines, cleanText);
-  if (items.length > 0) { console.log(`[Parser] Desc+R$: ${items.length} itens`); return items; }
+  if (items.length > 0) { import.meta.env.DEV && console.log(`[Parser] Desc+R$: ${items.length} itens`); return items; }
 
   items = parseFallback(sectionLines, cleanText);
-  if (items.length > 0) { console.log(`[Parser] Fallback: ${items.length} itens`); return items; }
+  if (items.length > 0) { import.meta.env.DEV && console.log(`[Parser] Fallback: ${items.length} itens`); return items; }
 
-  console.log("[Parser] Nenhum item encontrado");
+  if (import.meta.env.DEV) console.log("[Parser] Nenhum item encontrado");
   return [];
 }
 
