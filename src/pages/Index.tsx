@@ -86,6 +86,7 @@ function LaudoApp() {
         <div className="mt-1 flex justify-center gap-4">
           <a href="/privacidade" className="hover:text-primary-foreground underline">Política de Privacidade</a>
           <a href="/termos" className="hover:text-primary-foreground underline">Termos de Uso</a>
+          <a href="/confianca" className="hover:text-primary-foreground underline">Central de Confiança</a>
         </div>
       </footer>
     </div>
