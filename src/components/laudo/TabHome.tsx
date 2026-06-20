@@ -112,12 +112,14 @@ export function TabHome() {
         groups[month] = { month, aprovado: 0, glosa: 0, qtd: 0 };
       }
       
-      const vlrAprovado = l.analise.itensOrcamento
-        .filter(i => i.status === "aprovado")
-        .reduce((s, i) => s + i.valorTotal, 0);
-      const vlrGlosa = l.analise.itensOrcamento
-        .filter(i => i.status === "reprovado")
-        .reduce((s, i) => s + i.valorTotal, 0);
+      const vlrAprovado = l.analise.itensOrcamento.reduce((s, i) => {
+        const moSt = i.statusMaoObra ?? i.status;
+        return s + (i.status === "aprovado" ? i.valorPeca : 0) + (moSt === "aprovado" ? i.valorMaoObra : 0);
+      }, 0);
+      const vlrGlosa = l.analise.itensOrcamento.reduce((s, i) => {
+        const moSt = i.statusMaoObra ?? i.status;
+        return s + (i.status === "reprovado" ? i.valorPeca : 0) + (moSt === "reprovado" ? i.valorMaoObra : 0);
+      }, 0);
         
       groups[month].aprovado += vlrAprovado;
       groups[month].glosa += vlrGlosa;
@@ -130,13 +132,19 @@ export function TabHome() {
   const chartData = processData();
   
   const totalGeralAnalisado = laudosFinalizados.reduce((acc, l) => 
-    acc + l.analise.itensOrcamento.reduce((s, i) => s + i.valorTotal, 0), 0);
+    acc + l.analise.itensOrcamento.reduce((s, i) => s + (i.valorPeca + i.valorMaoObra), 0), 0);
   
   const totalGeralAprovado = laudosFinalizados.reduce((acc, l) => 
-    acc + l.analise.itensOrcamento.filter(i => i.status === "aprovado").reduce((s, i) => s + i.valorTotal, 0), 0);
+    acc + l.analise.itensOrcamento.reduce((s, i) => {
+      const moSt = i.statusMaoObra ?? i.status;
+      return s + (i.status === "aprovado" ? i.valorPeca : 0) + (moSt === "aprovado" ? i.valorMaoObra : 0);
+    }, 0), 0);
     
   const totalGeralGlosa = laudosFinalizados.reduce((acc, l) => 
-    acc + l.analise.itensOrcamento.filter(i => i.status === "reprovado").reduce((s, i) => s + i.valorTotal, 0), 0);
+    acc + l.analise.itensOrcamento.reduce((s, i) => {
+      const moSt = i.statusMaoObra ?? i.status;
+      return s + (i.status === "reprovado" ? i.valorPeca : 0) + (moSt === "reprovado" ? i.valorMaoObra : 0);
+    }, 0), 0);
 
   const taxaGlosa = totalGeralAnalisado > 0 ? (totalGeralGlosa / totalGeralAnalisado) * 100 : 0;
 
