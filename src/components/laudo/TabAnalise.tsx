@@ -357,7 +357,7 @@ function ItemCard({ idx, item, open, onToggle, onUpdate, onRemove }: ItemCardPro
             </button>
           </CollapsibleTrigger>
         </div>
-        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
+        <Button variant="ghost" size="sm" aria-label="Remover item" onClick={(e) => { e.stopPropagation(); onRemove(); }}>
           <Trash2 className="h-4 w-4 text-destructive" />
         </Button>
       </div>
@@ -436,7 +436,7 @@ function GrupoCard({ idx, grupo, itens, open, onToggle, onUpdateGrupo, onRemover
             </button>
           </CollapsibleTrigger>
         </div>
-        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onDesfazer(); }} title="Desfazer agrupamento">
+        <Button variant="ghost" size="sm" aria-label="Desfazer agrupamento" onClick={(e) => { e.stopPropagation(); onDesfazer(); }} title="Desfazer agrupamento">
           <Unlink className="h-4 w-4 text-muted-foreground" />
         </Button>
       </div>
@@ -507,7 +507,7 @@ function SubItem({ item, onUpdate, onRemover }: { item: ItemOrcamento; onUpdate:
             <span className="text-xs text-muted-foreground ml-auto mr-2">{fmtBRL(item.valorTotal)}</span>
           </button>
         </CollapsibleTrigger>
-        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onRemover(); }} title="Remover do grupo">
+        <Button variant="ghost" size="sm" aria-label="Remover do grupo" onClick={(e) => { e.stopPropagation(); onRemover(); }} title="Remover do grupo">
           <Unlink className="h-3 w-3 text-muted-foreground" />
         </Button>
       </div>

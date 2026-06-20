@@ -137,17 +137,18 @@ export function TabListagem({ statusFilter }: TabListagemProps) {
                               size="icon" 
                               onClick={() => handleFinalizar(l.id, l.dadosVeiculo.placa)} 
                               title="Finalizar Vistoria"
+                              aria-label="Finalizar vistoria"
                             >
                               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                             </Button>
                           )}
-                          <Button variant="ghost" size="icon" onClick={() => handleDownloadPDF(l)} title="Baixar PDF">
+                          <Button variant="ghost" size="icon" onClick={() => handleDownloadPDF(l)} title="Baixar PDF" aria-label="Baixar PDF do laudo">
                             <FileDown className="h-4 w-4 text-primary" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => carregarLaudo(l.id)} title="Editar/Consultar">
+                          <Button variant="ghost" size="icon" onClick={() => carregarLaudo(l.id)} title="Editar/Consultar" aria-label="Editar ou consultar laudo">
                             <Edit className="h-4 w-4 text-accent" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => excluirLaudo(l.id)} title="Excluir">
+                          <Button variant="ghost" size="icon" onClick={() => excluirLaudo(l.id)} title="Excluir" aria-label="Excluir laudo">
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
