@@ -85,7 +85,7 @@ export function TabAnalise() {
       id: crypto.randomUUID(),
       codigo: "", grupo: "", descricao: "", acao: "", statusItem: "",
       qtdPeca: 1, valorPeca: 0, qtdMaoObra: 0, valorMaoObra: 0, valorTotal: 0,
-      impostos: { ipi: 0, icms: 0 }, justificativa: "", status: "pendente",
+      impostos: { ipi: 0, icms: 0 }, justificativa: "", status: "pendente", statusMaoObra: "pendente",
     };
     updateAnalise({
       itensOrcamento: [...itensOrcamento, novo],
@@ -99,7 +99,9 @@ export function TabAnalise() {
       itensOrcamento: itensOrcamento.map(item => {
         if (item.id !== id) return item;
         const upd = { ...item, ...updates };
-        upd.valorTotal = upd.valorPeca + upd.valorMaoObra;
+        const pecaOk = upd.status !== 'reprovado';
+        const moOk = (upd.statusMaoObra ?? 'pendente') !== 'reprovado';
+        upd.valorTotal = (pecaOk ? upd.valorPeca : 0) + (moOk ? upd.valorMaoObra : 0);
         return upd;
       }),
     });
