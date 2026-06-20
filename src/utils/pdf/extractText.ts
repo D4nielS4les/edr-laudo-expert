@@ -65,7 +65,9 @@ export async function extractTextFromPDF(file: File): Promise<string> {
       fullText += '\n--- PAGE BREAK ---\n';
     }
 
-    console.log("[PDF] Texto extraído (primeiros 3000 chars):", fullText.substring(0, 3000));
+    if (import.meta.env.DEV) {
+      console.log("[PDF] Texto extraído (primeiros 3000 chars):", fullText.substring(0, 3000));
+    }
     return fullText;
   } catch (error) {
     console.error("Erro no PDF.js:", error);
