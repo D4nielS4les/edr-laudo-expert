@@ -5,7 +5,9 @@ export function PageHeader() {
     <header className="gradient-hero px-6 py-4 flex items-center justify-between">
       <div className="flex items-center gap-4">
         <div className="flex flex-col">
-          <h1 className="text-2xl font-extrabold tracking-wider text-primary-foreground">EDR</h1>
+          <h1 className="text-2xl font-extrabold tracking-wider text-primary-foreground">
+            EDR — Gestão de Laudos e Sinistros
+          </h1>
           <span className="text-[10px] font-medium tracking-widest text-primary-foreground/80 uppercase">
             Inspeções e Regulações de Sinistros
           </span>

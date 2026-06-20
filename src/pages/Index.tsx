@@ -1,4 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Home, Users, Wrench, Camera, BarChart3, FileCheck, FileDown, List, Save, CheckCircle2, Clock } from "lucide-react";
 import { LaudoProvider } from "@/contexts/LaudoContext";
@@ -47,6 +48,13 @@ function LaudoApp() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <Helmet>
+        <title>EDR Inspeções — Sistema de Gestão de Laudos Periciais</title>
+        <meta name="description" content="Sistema da EDR Inspeções para gestão de laudos periciais, vistorias veiculares e regulações de sinistros, com importação de orçamentos em PDF." />
+        <link rel="canonical" href="https://edr-laudo-mate.lovable.app/" />
+        <meta property="og:title" content="EDR Inspeções — Sistema de Gestão de Laudos Periciais" />
+        <meta property="og:url" content="https://edr-laudo-mate.lovable.app/" />
+      </Helmet>
       <PageHeader />
 
       <div className="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full">
