@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { PageHeader } from "@/components/laudo/PageHeader";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
@@ -6,6 +7,13 @@ import { ArrowLeft } from "lucide-react";
 export default function PoliticaPrivacidade() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Helmet>
+        <title>Política de Privacidade — EDR Inspeções</title>
+        <meta name="description" content="Política de Privacidade da EDR SERVIÇOS TÉCNICOS LTDA: como tratamos dados pessoais no sistema de laudos, em conformidade com a LGPD." />
+        <link rel="canonical" href="https://edr-laudo-mate.lovable.app/privacidade" />
+        <meta property="og:title" content="Política de Privacidade — EDR Inspeções" />
+        <meta property="og:url" content="https://edr-laudo-mate.lovable.app/privacidade" />
+      </Helmet>
       <PageHeader />
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
         <Link to="/" className="inline-flex items-center gap-2 text-sm text-accent hover:underline mb-4">

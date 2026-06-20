@@ -1,11 +1,58 @@
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { PageHeader } from "@/components/laudo/PageHeader";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Shield, Lock, Database, FileCheck, Mail } from "lucide-react";
 
 export default function Confianca() {
+  const faq = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "Quem pode acessar o sistema de laudos da EDR?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "O acesso é restrito à equipe técnica da EDR e colaboradores autorizados pela Controladora, em estações de trabalho de uso interno.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Onde os dados dos laudos ficam armazenados?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Os dados são armazenados localmente no navegador do operador (localStorage) durante a vistoria, e exportados em PDF para entrega ao cliente.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "O sistema usa cookies de rastreamento?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Não. Utilizamos apenas armazenamento estritamente necessário ao funcionamento, conforme exibido no banner de consentimento.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Como exercer meus direitos da LGPD?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Envie a solicitação para edr@edr.com.br informando o direito a ser exercido. A EDR responderá nos prazos previstos pela LGPD.",
+        },
+      },
+    ],
+  };
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <Helmet>
+        <title>Central de Confiança — EDR Inspeções</title>
+        <meta name="description" content="Central de Confiança da EDR Inspeções: segurança, privacidade, cookies, LGPD e canais de contato sobre o sistema de laudos." />
+        <link rel="canonical" href="https://edr-laudo-mate.lovable.app/confianca" />
+        <meta property="og:title" content="Central de Confiança — EDR Inspeções" />
+        <meta property="og:url" content="https://edr-laudo-mate.lovable.app/confianca" />
+        <script type="application/ld+json">{JSON.stringify(faq)}</script>
+      </Helmet>
       <PageHeader />
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
         <Link to="/" className="inline-flex items-center gap-2 text-sm text-accent hover:underline mb-4">
