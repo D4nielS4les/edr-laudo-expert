@@ -535,16 +535,32 @@ function ItemFields({ item, onUpdate, hideStatus }: { item: ItemOrcamento; onUpd
       </div>
       {!hideStatus && (
         <>
-          <div>
-            <Label className="text-xs">Status</Label>
-            <Select value={item.status} onValueChange={v => onUpdate({ status: v as ItemOrcamento["status"] })}>
-              <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pendente">Pendente</SelectItem>
-                <SelectItem value="aprovado">Aprovado</SelectItem>
-                <SelectItem value="reprovado">Reprovado</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Status Peça</Label>
+              <Select value={item.status} onValueChange={v => onUpdate({ status: v as ItemOrcamento["status"] })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="aprovado">Aprovado</SelectItem>
+                  <SelectItem value="reprovado">Reprovado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Status Mão de Obra</Label>
+              <Select
+                value={item.statusMaoObra ?? 'pendente'}
+                onValueChange={v => onUpdate({ statusMaoObra: v as NonNullable<ItemOrcamento["statusMaoObra"]> })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="aprovado">Aprovado</SelectItem>
+                  <SelectItem value="reprovado">Reprovado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div>
             <Label className="text-xs">Justificativa Técnica</Label>
