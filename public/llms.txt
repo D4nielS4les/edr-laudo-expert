@@ -1,0 +1,10 @@
+# EDR Inspeções e Regulações de Sinistros
+
+> Sistema de gestão de laudos periciais para inspeção e regulação de sinistros. Permite importar orçamentos de oficina (PDF), analisar peças e mão de obra com status de aprovação/reprovação, anexar fotos da vistoria, gerar laudos conclusivos e exportar o documento em PDF.
+
+## Pages
+
+- [/](/): Dashboard principal do sistema — importação de orçamento, cadastro de cliente/veículo, dados da oficina, vistoria fotográfica, análise de itens com aprovação/reprovação por peça e mão de obra, conclusão do laudo e geração do PDF.
+- [/privacidade](/privacidade): Política de Privacidade da EDR SERVIÇOS TECNICOS LTDA conforme a LGPD.
+- [/termos](/termos): Termos de Uso do sistema EDR Laudos.
+- [/confianca](/confianca): Central de Confiança — informações sobre segurança, autenticação, armazenamento de dados, cookies e canais de contato.
