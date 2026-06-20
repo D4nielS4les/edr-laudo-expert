@@ -89,12 +89,14 @@ export function TabListagem({ statusFilter }: TabListagemProps) {
               <TableBody>
                 {laudosFiltrados.map((l) => {
                   const itens = l.analise.itensOrcamento;
-                  const valorAprovado = itens
-                    .filter(i => i.status === "aprovado")
-                    .reduce((sum, i) => sum + i.valorTotal, 0);
-                  const valorGlosa = itens
-                    .filter(i => i.status === "reprovado")
-                    .reduce((sum, i) => sum + i.valorTotal, 0);
+                  const valorAprovado = itens.reduce((sum, i) => {
+                    const moSt = i.statusMaoObra ?? i.status;
+                    return sum + (i.status === "aprovado" ? i.valorPeca : 0) + (moSt === "aprovado" ? i.valorMaoObra : 0);
+                  }, 0);
+                  const valorGlosa = itens.reduce((sum, i) => {
+                    const moSt = i.statusMaoObra ?? i.status;
+                    return sum + (i.status === "reprovado" ? i.valorPeca : 0) + (moSt === "reprovado" ? i.valorMaoObra : 0);
+                  }, 0);
                   
                   const temGlosa = valorGlosa > 0;
                   
