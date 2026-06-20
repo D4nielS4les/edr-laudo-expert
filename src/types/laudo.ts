@@ -63,6 +63,7 @@ export interface ItemOrcamento {
   impostos: { ipi: number; icms: number };
   justificativa: string;
   status: 'pendente' | 'aprovado' | 'reprovado';
+  statusMaoObra?: 'pendente' | 'aprovado' | 'reprovado';
   fotos?: FotoItem[];
 }
 
