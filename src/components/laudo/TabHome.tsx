@@ -6,99 +6,16 @@ import {
 } from "recharts";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Truck, Clock, DollarSign, Wrench, AlertCircle, FileSearch, ClipboardList, FileUp } from "lucide-react";
+import { Truck, Clock, DollarSign, Wrench, AlertCircle, FileSearch, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useRef } from "react";
-import { extractTextFromPDF, parseOSData } from "@/utils/pdfParser";
 import { useToast } from "@/hooks/use-toast";
 
 export function TabHome() {
   const { listaLaudos, setActiveTab, updateLaudo, novoLaudo } = useLaudo();
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const laudosFinalizados = listaLaudos.filter(l => l.status === 'finalizado');
   const laudosPendentes = listaLaudos.filter(l => l.status === 'pendente' || !l.status);
-  
-  const handleImportPDF = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    toast({ title: "Processando PDF...", description: "Extraindo informações do orçamento." });
-
-    try {
-      const text = await extractTextFromPDF(file);
-      const data = parseOSData(text);
-
-      updateLaudo({
-        id: crypto.randomUUID(),
-        status: 'pendente',
-        ordemServico: data.ordemServico || '',
-        dadosCliente: {
-          solicitante: data.dadosCliente?.solicitante || '',
-          empresa: data.dadosCliente?.empresa || '',
-          clienteFinal: data.dadosCliente?.clienteFinal || '',
-          cpfCnpj: data.dadosCliente?.cpfCnpj || '',
-          agendamento: data.dadosCliente?.agendamento || '',
-          endereco: data.dadosCliente?.endereco || '',
-          bairro: data.dadosCliente?.bairro || '',
-          cidade: data.dadosCliente?.cidade || '',
-          cep: data.dadosCliente?.cep || '',
-          telefone: data.dadosCliente?.telefone || '',
-          email: data.dadosCliente?.email || '',
-        },
-        dadosVeiculo: {
-          marcaModelo: data.dadosVeiculo?.marcaModelo || '',
-          anoFabricacao: data.dadosVeiculo?.anoFabricacao || '',
-          anoModelo: data.dadosVeiculo?.anoModelo || '',
-          placa: data.dadosVeiculo?.placa || '',
-          chassi: data.dadosVeiculo?.chassi || '',
-          hodometro: data.dadosVeiculo?.hodometro || '',
-          motorizacao: data.dadosVeiculo?.motorizacao || '',
-          cor: data.dadosVeiculo?.cor || '',
-          combustivel: data.dadosVeiculo?.combustivel || '',
-        },
-        dadosOS: {
-          statusOS: data.dadosOS?.statusOS || '',
-          tipoManutencao: data.dadosOS?.tipoManutencao || '',
-          dataEmissao: data.dadosOS?.dataEmissao || '',
-          dataPrevInicio: data.dadosOS?.dataPrevInicio || '',
-          dataPrevConclusao: data.dadosOS?.dataPrevConclusao || '',
-          dataConclusao: data.dadosOS?.dataConclusao || '',
-        },
-        dadosOficina: {
-          nome: data.dadosOficina?.nome || '',
-          endereco: data.dadosOficina?.endereco || '',
-          bairro: data.dadosOficina?.bairro || '',
-          cidade: data.dadosOficina?.cidade || '',
-          telefone: data.dadosOficina?.telefone || '',
-          responsavel: data.dadosOficina?.responsavel || '',
-          cnpj: data.dadosOficina?.cnpj || '',
-        },
-        analise: {
-          itensOrcamento: data.itens || [],
-          causaRaiz: '',
-          historicoManutencao: data.relatos?.relatoOficina || '',
-          relatoMotorista: data.relatos?.relatoMotorista || '',
-        },
-        dataLaudo: new Date().toISOString().split("T")[0],
-      });
-
-      toast({ 
-        title: "Importação Concluída!", 
-        description: `OS ${data.ordemServico || ''} carregada com ${data.itens.length} itens.` 
-      });
-      
-      setActiveTab("cliente");
-    } catch (err) {
-      console.error(err);
-      toast({ 
-        title: "Erro na Importação", 
-        description: "Não foi possível ler os dados deste PDF.", 
-        variant: "destructive" 
-      });
-    }
-  };
 
   const processData = () => {
     const groups: Record<string, any> = {};
@@ -161,21 +78,8 @@ export function TabHome() {
       <div className="flex flex-wrap gap-4 items-center justify-between">
         <h2 className="text-2xl font-bold text-primary">Dashboard de Operações</h2>
         <div className="flex gap-2 flex-wrap">
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            className="hidden" 
-            accept="application/pdf" 
-            onChange={handleImportPDF} 
-          />
-          <Button 
-            onClick={() => fileInputRef.current?.click()} 
-            className="gap-2 bg-accent hover:bg-accent/90"
-          >
-            <FileUp className="h-4 w-4" /> Importar PDF
-          </Button>
-          <Button onClick={novoLaudo} variant="outline" className="gap-2">
-            <ClipboardList className="h-4 w-4" /> Nova Vistoria Manual
+          <Button onClick={novoLaudo} className="gap-2 bg-accent hover:bg-accent/90">
+            <ClipboardList className="h-4 w-4" /> Nova Vistoria
           </Button>
         </div>
       </div>
