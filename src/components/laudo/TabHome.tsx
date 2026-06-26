@@ -75,14 +75,7 @@ export function TabHome() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-4 items-center justify-between">
-        <h2 className="text-2xl font-bold text-primary">Dashboard de Operações</h2>
-        <div className="flex gap-2 flex-wrap">
-          <Button onClick={novoLaudo} className="gap-2 bg-accent hover:bg-accent/90">
-            <ClipboardList className="h-4 w-4" /> Nova Vistoria
-          </Button>
-        </div>
-      </div>
+      <h2 className="text-2xl font-bold text-primary">Dashboard de Operações</h2>
 
       {laudosFinalizados.length === 0 ? (
         <div className="space-y-6">
