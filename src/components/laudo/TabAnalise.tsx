@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, ChevronDown, ChevronUp, GripVertical, Layers, Unlink, ImagePlus, X } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronUp, GripVertical, Layers, Unlink, ImagePlus, X, CheckCheck } from "lucide-react";
 import { useLaudo } from "@/contexts/LaudoContext";
 import type { ItemOrcamento, GrupoAnalise, FotoItem } from "@/types/laudo";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -205,6 +205,17 @@ export function TabAnalise() {
   const subtotalMaoObra = itensOrcamento.reduce((s, i) => s + i.valorMaoObra, 0);
   const totalGeral = itensOrcamento.reduce((s, i) => s + i.valorTotal, 0);
 
+  const aprovarTodos = () => {
+    updateAnalise({
+      itensOrcamento: itensOrcamento.map(item => {
+        const upd = { ...item, status: 'aprovado' as const, statusMaoObra: 'aprovado' as const };
+        upd.valorTotal = upd.valorPeca + upd.valorMaoObra;
+        return upd;
+      }),
+      gruposAnalise: grupos.map(g => ({ ...g, status: 'aprovado' as const })),
+    });
+  };
+
   const activeBloco = activeId ? blocosCalc.find(b => b.id === activeId) : null;
 
   return (
@@ -277,10 +288,15 @@ export function TabAnalise() {
           </DndContext>
 
           {itensOrcamento.length > 0 && (
-            <div className="border-t border-border pt-3 flex flex-wrap gap-6 text-sm">
-              <span>Subtotal Peças: <strong>{fmtBRL(subtotalPecas)}</strong></span>
-              <span>Subtotal M.O.: <strong>{fmtBRL(subtotalMaoObra)}</strong></span>
-              <span className="text-foreground font-bold">Total Geral: {fmtBRL(totalGeral)}</span>
+            <div className="border-t border-border pt-3 flex flex-wrap items-center justify-between gap-4 text-sm">
+              <div className="flex flex-wrap gap-6">
+                <span>Subtotal Peças: <strong>{fmtBRL(subtotalPecas)}</strong></span>
+                <span>Subtotal M.O.: <strong>{fmtBRL(subtotalMaoObra)}</strong></span>
+                <span className="text-foreground font-bold">Total Geral: {fmtBRL(totalGeral)}</span>
+              </div>
+              <Button size="sm" variant="outline" onClick={aprovarTodos} className="gap-1">
+                <CheckCheck className="h-4 w-4 text-success" /> Aprovar todos os itens
+              </Button>
             </div>
           )}
         </CardContent>
