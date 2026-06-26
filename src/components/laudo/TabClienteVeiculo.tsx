@@ -2,54 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLaudo } from "@/contexts/LaudoContext";
-import { Button } from "@/components/ui/button";
-import { FileUp } from "lucide-react";
-import { useRef } from "react";
-import { extractTextFromPDF, parseOSData } from "@/utils/pdfParser";
-import { useToast } from "@/hooks/use-toast";
 
 export function TabClienteVeiculo() {
   const { laudo, updateCliente, updateVeiculo, updateProcesso, updateLaudo } = useLaudo();
-  const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleImportPDF = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    toast({ title: "Processando PDF...", description: "Extraindo informações do orçamento." });
-    try {
-      const text = await extractTextFromPDF(file);
-      const data = parseOSData(text);
-      updateLaudo({
-        ordemServico: data.ordemServico || laudo.ordemServico,
-        dadosCliente: { ...laudo.dadosCliente, ...(data.dadosCliente || {}) },
-        dadosVeiculo: { ...laudo.dadosVeiculo, ...(data.dadosVeiculo || {}) },
-        dadosOS: { ...laudo.dadosOS, ...(data.dadosOS || {}) },
-        dadosOficina: { ...laudo.dadosOficina, ...(data.dadosOficina || {}) },
-        analise: {
-          ...laudo.analise,
-          itensOrcamento: data.itens || [],
-          historicoManutencao: data.relatos?.relatoOficina || laudo.analise.historicoManutencao,
-          relatoMotorista: data.relatos?.relatoMotorista || laudo.analise.relatoMotorista,
-        },
-      });
-      toast({ title: "Importação Concluída!", description: `OS ${data.ordemServico || ''} carregada com ${data.itens.length} itens.` });
-    } catch (err) {
-      console.error(err);
-      toast({ title: "Erro na Importação", description: "Não foi possível ler os dados deste PDF.", variant: "destructive" });
-    } finally {
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
-        <input type="file" ref={fileInputRef} className="hidden" accept="application/pdf" onChange={handleImportPDF} />
-        <Button onClick={() => fileInputRef.current?.click()} className="gap-2 bg-accent hover:bg-accent/90">
-          <FileUp className="h-4 w-4" /> Importar PDF
-        </Button>
-      </div>
       <Card>
         <CardHeader><CardTitle className="text-base">Informações Gerais do Processo</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
