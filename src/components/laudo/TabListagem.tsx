@@ -77,8 +77,8 @@ export function TabListagem({ statusFilter }: TabListagemProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>O.S.</TableHead>
                   <TableHead>Placa</TableHead>
+                  <TableHead>Veículo</TableHead>
                   <TableHead>Cliente / Empresa</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Vlr. Aprovado</TableHead>
@@ -102,7 +102,6 @@ export function TabListagem({ statusFilter }: TabListagemProps) {
                   
                   return (
                     <TableRow key={l.id}>
-                      <TableCell className="font-medium">{l.ordemServico || "—"}</TableCell>
                       <TableCell>
                         <Badge 
                           variant="outline" 
@@ -115,6 +114,9 @@ export function TabListagem({ statusFilter }: TabListagemProps) {
                         >
                           {l.dadosVeiculo.placa || "S/ PLACA"}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {l.dadosVeiculo.marcaModelo || "—"}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col">
