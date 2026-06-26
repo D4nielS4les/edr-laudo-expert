@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, ChevronDown, ChevronUp, GripVertical, Layers, Unlink, ImagePlus, X, CheckCheck } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronUp, GripVertical, Layers, Unlink, ImagePlus, X, CheckCheck, XCircle } from "lucide-react";
 import { useLaudo } from "@/contexts/LaudoContext";
 import type { ItemOrcamento, GrupoAnalise, FotoItem } from "@/types/laudo";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -216,6 +216,18 @@ export function TabAnalise() {
     });
   };
 
+  const reprovarTodos = () => {
+    updateAnalise({
+      itensOrcamento: itensOrcamento.map(item => ({
+        ...item,
+        status: 'reprovado' as const,
+        statusMaoObra: 'reprovado' as const,
+        valorTotal: 0,
+      })),
+      gruposAnalise: grupos.map(g => ({ ...g, status: 'reprovado' as const })),
+    });
+  };
+
   const activeBloco = activeId ? blocosCalc.find(b => b.id === activeId) : null;
 
   return (
@@ -294,9 +306,14 @@ export function TabAnalise() {
                 <span>Subtotal M.O.: <strong>{fmtBRL(subtotalMaoObra)}</strong></span>
                 <span className="text-foreground font-bold">Total Geral: {fmtBRL(totalGeral)}</span>
               </div>
-              <Button size="sm" variant="outline" onClick={aprovarTodos} className="gap-1">
-                <CheckCheck className="h-4 w-4 text-success" /> Aprovar todos os itens
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={aprovarTodos} className="gap-1">
+                  <CheckCheck className="h-4 w-4 text-success" /> Aprovar todos os itens
+                </Button>
+                <Button size="sm" variant="outline" onClick={reprovarTodos} className="gap-1">
+                  <XCircle className="h-4 w-4 text-destructive" /> Reprovar todos os itens
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
