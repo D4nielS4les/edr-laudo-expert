@@ -1,7 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
-import { Home, Users, Wrench, Camera, BarChart3, FileCheck, FileDown, List, Save, CheckCircle2, Clock, ClipboardList } from "lucide-react";
+import { Home, Users, Wrench, Camera, BarChart3, FileCheck, FileDown, List, Save, CheckCircle2, Clock, ClipboardList, FileUp } from "lucide-react";
 import { LaudoProvider } from "@/contexts/LaudoContext";
 import { PageHeader } from "@/components/laudo/PageHeader";
 import { TabHome } from "@/components/laudo/TabHome";
@@ -14,6 +14,8 @@ import { TabListagem } from "@/components/laudo/TabListagem";
 import { useToast } from "@/hooks/use-toast";
 import { useLaudo } from "@/contexts/LaudoContext";
 import { generateLaudoPDF } from "@/utils/generateLaudoPDF";
+import { useRef } from "react";
+import { extractTextFromPDF, parseOSData } from "@/utils/pdfParser";
 
 const mainTabs = [
   { value: "home", label: "Início", icon: Home },
@@ -30,9 +32,38 @@ const vistoriaTabs = [
 
 function LaudoApp() {
   const { toast } = useToast();
-  const { laudo, activeTab, setActiveTab, salvarLaudoAtual, novoLaudo } = useLaudo();
+  const { laudo, activeTab, setActiveTab, salvarLaudoAtual, novoLaudo, updateLaudo } = useLaudo();
   const inVistoria = vistoriaTabs.some(t => t.value === activeTab);
-  const tabs = inVistoria ? vistoriaTabs : mainTabs;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportPDF = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    toast({ title: "Processando PDF...", description: "Extraindo informações do orçamento." });
+    try {
+      const text = await extractTextFromPDF(file);
+      const data = parseOSData(text);
+      updateLaudo({
+        ordemServico: data.ordemServico || laudo.ordemServico,
+        dadosCliente: { ...laudo.dadosCliente, ...(data.dadosCliente || {}) },
+        dadosVeiculo: { ...laudo.dadosVeiculo, ...(data.dadosVeiculo || {}) },
+        dadosOS: { ...laudo.dadosOS, ...(data.dadosOS || {}) },
+        dadosOficina: { ...laudo.dadosOficina, ...(data.dadosOficina || {}) },
+        analise: {
+          ...laudo.analise,
+          itensOrcamento: data.itens || [],
+          historicoManutencao: data.relatos?.relatoOficina || laudo.analise.historicoManutencao,
+          relatoMotorista: data.relatos?.relatoMotorista || laudo.analise.relatoMotorista,
+        },
+      });
+      toast({ title: "Importação Concluída!", description: `OS ${data.ordemServico || ''} carregada com ${data.itens.length} itens.` });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Erro na Importação", description: "Não foi possível ler os dados deste PDF.", variant: "destructive" });
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const handleExportPDF = async () => {
     toast({ title: "Gerando PDF...", description: "O laudo está sendo compilado para exportação." });
@@ -66,15 +97,35 @@ function LaudoApp() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
             <TabsList className="bg-muted h-auto flex-wrap gap-1 p-1">
-              {tabs.map(t => (
+              {mainTabs.map(t => (
                 <TabsTrigger key={t.value} value={t.value} className="gap-1.5 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                   <t.icon className="h-4 w-4" />
                   <span className="hidden sm:inline">{t.label}</span>
                 </TabsTrigger>
               ))}
             </TabsList>
-            {inVistoria && (
-              <div className="flex gap-2 w-full sm:w-auto">
+            {!inVistoria && activeTab === "home" && (
+              <Button onClick={novoLaudo} className="gap-2 bg-accent hover:bg-accent/90 text-accent-foreground">
+                <ClipboardList className="h-4 w-4" /> Nova Vistoria
+              </Button>
+            )}
+          </div>
+
+          {inVistoria && (
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-t pt-4">
+              <TabsList className="bg-muted h-auto flex-wrap gap-1 p-1">
+                {vistoriaTabs.map(t => (
+                  <TabsTrigger key={t.value} value={t.value} className="gap-1.5 text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                    <t.icon className="h-4 w-4" />
+                    <span className="hidden sm:inline">{t.label}</span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <input type="file" ref={fileInputRef} className="hidden" accept="application/pdf" onChange={handleImportPDF} />
+                <Button onClick={() => fileInputRef.current?.click()} className="flex-1 sm:flex-none gap-2 bg-accent hover:bg-accent/90 text-accent-foreground">
+                  <FileUp className="h-4 w-4" /> Importar PDF
+                </Button>
                 <Button onClick={handleSave} variant="outline" className="flex-1 sm:flex-none gap-2 border-accent text-accent hover:bg-accent/5">
                   <Save className="h-4 w-4" /> Salvar
                 </Button>
@@ -82,13 +133,8 @@ function LaudoApp() {
                   <FileDown className="h-4 w-4" /> Gerar Laudo
                 </Button>
               </div>
-            )}
-            {activeTab === "home" && (
-              <Button onClick={novoLaudo} className="gap-2 bg-accent hover:bg-accent/90 text-accent-foreground">
-                <ClipboardList className="h-4 w-4" /> Nova Vistoria
-              </Button>
-            )}
-          </div>
+            </div>
+          )}
 
           <TabsContent value="home"><TabHome /></TabsContent>
           <TabsContent value="pendentes"><TabListagem statusFilter="pendente" /></TabsContent>
