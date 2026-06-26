@@ -73,14 +73,16 @@ function LaudoApp() {
                 </TabsTrigger>
               ))}
             </TabsList>
-            <div className="flex gap-2 w-full sm:w-auto">
-              <Button onClick={handleSave} variant="outline" className="flex-1 sm:flex-none gap-2 border-accent text-accent hover:bg-accent/5">
-                <Save className="h-4 w-4" /> Salvar
-              </Button>
-              <Button onClick={handleExportPDF} className="flex-1 sm:flex-none gap-2 bg-accent hover:bg-accent/90 text-accent-foreground">
-                <FileDown className="h-4 w-4" /> Gerar PDF
-              </Button>
-            </div>
+            {inVistoria && (
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button onClick={handleSave} variant="outline" className="flex-1 sm:flex-none gap-2 border-accent text-accent hover:bg-accent/5">
+                  <Save className="h-4 w-4" /> Salvar
+                </Button>
+                <Button onClick={handleExportPDF} className="flex-1 sm:flex-none gap-2 bg-accent hover:bg-accent/90 text-accent-foreground">
+                  <FileDown className="h-4 w-4" /> Gerar Laudo
+                </Button>
+              </div>
+            )}
           </div>
 
           <TabsContent value="home"><TabHome /></TabsContent>
