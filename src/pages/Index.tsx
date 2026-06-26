@@ -48,6 +48,7 @@ function LaudoApp() {
   const handleSave = () => {
     salvarLaudoAtual();
     toast({ title: "Laudo Salvo!", description: "As informações foram armazenadas com sucesso." });
+    setActiveTab("home");
   };
 
   return (
