@@ -15,10 +15,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useLaudo } from "@/contexts/LaudoContext";
 import { generateLaudoPDF } from "@/utils/generateLaudoPDF";
 
-const tabs = [
+const mainTabs = [
   { value: "home", label: "Início", icon: Home },
   { value: "pendentes", label: "Pendentes", icon: Clock },
   { value: "finalizadas", label: "Finalizadas", icon: CheckCircle2 },
+];
+const vistoriaTabs = [
   { value: "cliente", label: "Cliente / Veículo", icon: Users },
   { value: "oficina", label: "Oficina", icon: Wrench },
   { value: "fotos", label: "Vistoria e Fotos", icon: Camera },
@@ -29,6 +31,8 @@ const tabs = [
 function LaudoApp() {
   const { toast } = useToast();
   const { laudo, activeTab, setActiveTab, salvarLaudoAtual } = useLaudo();
+  const inVistoria = vistoriaTabs.some(t => t.value === activeTab);
+  const tabs = inVistoria ? vistoriaTabs : mainTabs;
 
   const handleExportPDF = async () => {
     toast({ title: "Gerando PDF...", description: "O laudo está sendo compilado para exportação." });
