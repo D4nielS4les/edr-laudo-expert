@@ -1,7 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
-import { Home, Users, Wrench, Camera, BarChart3, FileCheck, FileDown, List, Save, CheckCircle2, Clock } from "lucide-react";
+import { Home, Users, Wrench, Camera, BarChart3, FileCheck, FileDown, List, Save, CheckCircle2, Clock, ClipboardList } from "lucide-react";
 import { LaudoProvider } from "@/contexts/LaudoContext";
 import { PageHeader } from "@/components/laudo/PageHeader";
 import { TabHome } from "@/components/laudo/TabHome";
@@ -30,7 +30,7 @@ const vistoriaTabs = [
 
 function LaudoApp() {
   const { toast } = useToast();
-  const { laudo, activeTab, setActiveTab, salvarLaudoAtual } = useLaudo();
+  const { laudo, activeTab, setActiveTab, salvarLaudoAtual, novoLaudo } = useLaudo();
   const inVistoria = vistoriaTabs.some(t => t.value === activeTab);
   const tabs = inVistoria ? vistoriaTabs : mainTabs;
 
@@ -82,6 +82,11 @@ function LaudoApp() {
                   <FileDown className="h-4 w-4" /> Gerar Laudo
                 </Button>
               </div>
+            )}
+            {activeTab === "home" && (
+              <Button onClick={novoLaudo} className="gap-2 bg-accent hover:bg-accent/90 text-accent-foreground">
+                <ClipboardList className="h-4 w-4" /> Nova Vistoria
+              </Button>
             )}
           </div>
 
