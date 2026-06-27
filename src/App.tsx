@@ -9,6 +9,8 @@ import PoliticaPrivacidade from "./pages/PoliticaPrivacidade.tsx";
 import TermosDeUso from "./pages/TermosDeUso.tsx";
 import Confianca from "./pages/Confianca.tsx";
 import { CookieConsent } from "./components/CookieConsent";
+import Auth from "./pages/Auth.tsx";
+import { AuthProvider } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
 
@@ -18,8 +20,10 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <AuthProvider>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/auth" element={<Auth />} />
           <Route path="/privacidade" element={<PoliticaPrivacidade />} />
           <Route path="/termos" element={<TermosDeUso />} />
           <Route path="/confianca" element={<Confianca />} />
@@ -27,6 +31,7 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
         <CookieConsent />
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
