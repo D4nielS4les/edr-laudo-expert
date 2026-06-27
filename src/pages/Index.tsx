@@ -3,6 +3,8 @@ import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Home, Users, Wrench, Camera, BarChart3, FileCheck, FileDown, List, Save, CheckCircle2, Clock, ClipboardList, FileUp } from "lucide-react";
 import { LaudoProvider } from "@/contexts/LaudoContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { Navigate } from "react-router-dom";
 import { PageHeader } from "@/components/laudo/PageHeader";
 import { TabHome } from "@/components/laudo/TabHome";
 import { TabClienteVeiculo } from "@/components/laudo/TabClienteVeiculo";
@@ -160,6 +162,9 @@ function LaudoApp() {
 }
 
 export default function Index() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/auth" replace />;
   return (
     <LaudoProvider>
       <LaudoApp />
