@@ -256,3 +256,47 @@ create trigger laudos_set_updated_at before update on public.laudos
 --   with check (bucket_id = 'laudo-fotos' and (storage.foldername(name))[1] = auth.uid()::text);
 -- create policy "fotos storage delete own" on storage.objects for delete to authenticated
 --   using (bucket_id = 'laudo-fotos' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- =========================================================
+-- PROFILES (dados de perfil do usuário)
+-- =========================================================
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  nome text default '',
+  avatar_url text default '',
+  cargo text default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+grant select, insert, update on public.profiles to authenticated;
+grant all on public.profiles to service_role;
+alter table public.profiles enable row level security;
+
+create policy "profiles select own" on public.profiles for select to authenticated using (auth.uid() = id);
+create policy "profiles insert own" on public.profiles for insert to authenticated with check (auth.uid() = id);
+create policy "profiles update own" on public.profiles for update to authenticated using (auth.uid() = id);
+
+drop trigger if exists profiles_set_updated_at on public.profiles;
+create trigger profiles_set_updated_at before update on public.profiles
+  for each row execute function public.set_updated_at();
+
+-- Auto criar profile + role 'user' no signup
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, nome) values (new.id, coalesce(new.raw_user_meta_data->>'nome',''))
+    on conflict (id) do nothing;
+  insert into public.user_roles (user_id, role) values (new.id, 'user')
+    on conflict (user_id, role) do nothing;
+  return new;
+end $$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- =========================================================
+-- PAYLOAD JSONB em laudos (armazena o objeto completo do laudo)
+-- =========================================================
+alter table public.laudos add column if not exists payload jsonb default '{}'::jsonb;
