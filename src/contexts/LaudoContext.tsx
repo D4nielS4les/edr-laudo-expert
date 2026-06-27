@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import type { LaudoPericial } from "@/types/laudo";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const createEmptyLaudo = (): LaudoPericial => ({
   id: crypto.randomUUID(),
@@ -39,24 +41,53 @@ interface LaudoContextType {
 const LaudoContext = createContext<LaudoContextType | undefined>(undefined);
 
 export function LaudoProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [laudo, setLaudo] = useState<LaudoPericial>(createEmptyLaudo());
   const [listaLaudos, setListaLaudos] = useState<LaudoPericial[]>([]);
   const [activeTab, setActiveTab] = useState("home");
 
+  // Carrega laudos do usuário do Supabase
   useEffect(() => {
-    const saved = localStorage.getItem("edr_laudos_lista");
-    if (saved) {
-      try {
-        setListaLaudos(JSON.parse(saved));
-      } catch (e) {
-        console.error("Erro ao carregar laudos salvos", e);
-      }
-    }
-  }, []);
+    if (!user) { setListaLaudos([]); return; }
+    (async () => {
+      const { data, error } = await supabase
+        .from("laudos")
+        .select("payload, updated_at")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false });
+      if (error) { console.error("Erro carregando laudos:", error); return; }
+      const lista = (data ?? []).map((r: any) => r.payload as LaudoPericial).filter(Boolean);
+      setListaLaudos(lista);
+    })();
+  }, [user]);
 
-  useEffect(() => {
-    localStorage.setItem("edr_laudos_lista", JSON.stringify(listaLaudos));
-  }, [listaLaudos]);
+  // Mapeia laudo -> colunas estruturadas + payload jsonb
+  const toRow = (l: LaudoPericial) => ({
+    id: l.id,
+    user_id: user!.id,
+    status: l.status,
+    data_laudo: l.dataLaudo,
+    ordem_servico: l.ordemServico,
+    cliente_solicitante: l.dadosCliente.solicitante,
+    cliente_empresa: l.dadosCliente.empresa,
+    cliente_final: l.dadosCliente.clienteFinal,
+    cliente_cpf_cnpj: l.dadosCliente.cpfCnpj,
+    cliente_telefone: l.dadosCliente.telefone,
+    cliente_email: l.dadosCliente.email,
+    veiculo_marca_modelo: l.dadosVeiculo.marcaModelo,
+    veiculo_placa: l.dadosVeiculo.placa,
+    veiculo_chassi: l.dadosVeiculo.chassi,
+    oficina_nome: l.dadosOficina.nome,
+    oficina_cnpj: l.dadosOficina.cnpj,
+    payload: { ...l, fotos: [] }, // fotos com File não serializam — descartadas aqui
+  });
+
+  const persistLaudo = async (l: LaudoPericial) => {
+    if (!user) return;
+    const row = toRow(l);
+    const { error } = await supabase.from("laudos").upsert(row, { onConflict: "id" });
+    if (error) console.error("Erro salvando laudo:", error);
+  };
 
   const updateLaudo = (updates: Partial<LaudoPericial>) =>
     setLaudo((prev) => ({ ...prev, ...updates }));
@@ -80,6 +111,7 @@ export function LaudoProvider({ children }: { children: ReactNode }) {
     setLaudo((prev) => ({ ...prev, conclusao: { ...prev.conclusao, ...updates } }));
 
   const salvarLaudoAtual = () => {
+    persistLaudo(laudo);
     setListaLaudos((prev) => {
       const index = prev.findIndex((l) => l.id === laudo.id);
       if (index >= 0) {
@@ -94,6 +126,7 @@ export function LaudoProvider({ children }: { children: ReactNode }) {
   const finalizarLaudoAtual = () => {
     const laudoFinalizado: LaudoPericial = { ...laudo, status: 'finalizado' };
     setLaudo(laudoFinalizado);
+    persistLaudo(laudoFinalizado);
     setListaLaudos((prev) => {
       const index = prev.findIndex((l) => l.id === laudo.id);
       if (index >= 0) {
@@ -111,6 +144,8 @@ export function LaudoProvider({ children }: { children: ReactNode }) {
     if (laudo.id === id) {
       setLaudo(prev => ({ ...prev, status: 'finalizado' }));
     }
+    const alvo = listaLaudos.find(l => l.id === id);
+    if (alvo) persistLaudo({ ...alvo, status: 'finalizado' });
   };
 
   const carregarLaudo = (id: string) => {
@@ -126,6 +161,9 @@ export function LaudoProvider({ children }: { children: ReactNode }) {
     if (laudo.id === id) {
       setLaudo(createEmptyLaudo());
     }
+    supabase.from("laudos").delete().eq("id", id).then(({ error }) => {
+      if (error) console.error("Erro excluindo laudo:", error);
+    });
   };
 
   const novoLaudo = () => {
