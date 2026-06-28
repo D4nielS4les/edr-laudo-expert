@@ -45,6 +45,7 @@ returns boolean language sql stable security definer set search_path = public as
   select exists (select 1 from public.user_roles where user_id = _user_id and role = _role)
 $$;
 
+drop policy if exists "users read own roles" on public.user_roles;
 create policy "users read own roles" on public.user_roles
   for select to authenticated using (auth.uid() = user_id);
 
@@ -129,9 +130,13 @@ grant select, insert, update, delete on public.laudos to authenticated;
 grant all on public.laudos to service_role;
 alter table public.laudos enable row level security;
 
+drop policy if exists "laudos select own" on public.laudos;
 create policy "laudos select own" on public.laudos for select to authenticated using (auth.uid() = user_id);
+drop policy if exists "laudos insert own" on public.laudos;
 create policy "laudos insert own" on public.laudos for insert to authenticated with check (auth.uid() = user_id);
+drop policy if exists "laudos update own" on public.laudos;
 create policy "laudos update own" on public.laudos for update to authenticated using (auth.uid() = user_id);
+drop policy if exists "laudos delete own" on public.laudos;
 create policy "laudos delete own" on public.laudos for delete to authenticated using (auth.uid() = user_id);
 
 -- =========================================================
@@ -166,12 +171,16 @@ grant select, insert, update, delete on public.laudo_itens_orcamento to authenti
 grant all on public.laudo_itens_orcamento to service_role;
 alter table public.laudo_itens_orcamento enable row level security;
 
+drop policy if exists "itens select" on public.laudo_itens_orcamento;
 create policy "itens select" on public.laudo_itens_orcamento for select to authenticated
   using (exists (select 1 from public.laudos l where l.id = laudo_id and l.user_id = auth.uid()));
+drop policy if exists "itens insert" on public.laudo_itens_orcamento;
 create policy "itens insert" on public.laudo_itens_orcamento for insert to authenticated
   with check (exists (select 1 from public.laudos l where l.id = laudo_id and l.user_id = auth.uid()));
+drop policy if exists "itens update" on public.laudo_itens_orcamento;
 create policy "itens update" on public.laudo_itens_orcamento for update to authenticated
   using (exists (select 1 from public.laudos l where l.id = laudo_id and l.user_id = auth.uid()));
+drop policy if exists "itens delete" on public.laudo_itens_orcamento;
 create policy "itens delete" on public.laudo_itens_orcamento for delete to authenticated
   using (exists (select 1 from public.laudos l where l.id = laudo_id and l.user_id = auth.uid()));
 
@@ -196,12 +205,16 @@ grant select, insert, update, delete on public.laudo_grupos_analise to authentic
 grant all on public.laudo_grupos_analise to service_role;
 alter table public.laudo_grupos_analise enable row level security;
 
+drop policy if exists "grupos select" on public.laudo_grupos_analise;
 create policy "grupos select" on public.laudo_grupos_analise for select to authenticated
   using (exists (select 1 from public.laudos l where l.id = laudo_id and l.user_id = auth.uid()));
+drop policy if exists "grupos insert" on public.laudo_grupos_analise;
 create policy "grupos insert" on public.laudo_grupos_analise for insert to authenticated
   with check (exists (select 1 from public.laudos l where l.id = laudo_id and l.user_id = auth.uid()));
+drop policy if exists "grupos update" on public.laudo_grupos_analise;
 create policy "grupos update" on public.laudo_grupos_analise for update to authenticated
   using (exists (select 1 from public.laudos l where l.id = laudo_id and l.user_id = auth.uid()));
+drop policy if exists "grupos delete" on public.laudo_grupos_analise;
 create policy "grupos delete" on public.laudo_grupos_analise for delete to authenticated
   using (exists (select 1 from public.laudos l where l.id = laudo_id and l.user_id = auth.uid()));
 
@@ -224,12 +237,16 @@ grant select, insert, update, delete on public.laudo_fotos to authenticated;
 grant all on public.laudo_fotos to service_role;
 alter table public.laudo_fotos enable row level security;
 
+drop policy if exists "fotos select" on public.laudo_fotos;
 create policy "fotos select" on public.laudo_fotos for select to authenticated
   using (exists (select 1 from public.laudos l where l.id = laudo_id and l.user_id = auth.uid()));
+drop policy if exists "fotos insert" on public.laudo_fotos;
 create policy "fotos insert" on public.laudo_fotos for insert to authenticated
   with check (exists (select 1 from public.laudos l where l.id = laudo_id and l.user_id = auth.uid()));
+drop policy if exists "fotos update" on public.laudo_fotos;
 create policy "fotos update" on public.laudo_fotos for update to authenticated
   using (exists (select 1 from public.laudos l where l.id = laudo_id and l.user_id = auth.uid()));
+drop policy if exists "fotos delete" on public.laudo_fotos;
 create policy "fotos delete" on public.laudo_fotos for delete to authenticated
   using (exists (select 1 from public.laudos l where l.id = laudo_id and l.user_id = auth.uid()));
 
@@ -273,8 +290,11 @@ grant select, insert, update on public.profiles to authenticated;
 grant all on public.profiles to service_role;
 alter table public.profiles enable row level security;
 
+drop policy if exists "profiles select own" on public.profiles;
 create policy "profiles select own" on public.profiles for select to authenticated using (auth.uid() = id);
+drop policy if exists "profiles insert own" on public.profiles;
 create policy "profiles insert own" on public.profiles for insert to authenticated with check (auth.uid() = id);
+drop policy if exists "profiles update own" on public.profiles;
 create policy "profiles update own" on public.profiles for update to authenticated using (auth.uid() = id);
 
 drop trigger if exists profiles_set_updated_at on public.profiles;
