@@ -46,6 +46,22 @@ export function LaudoProvider({ children }: { children: ReactNode }) {
   const [listaLaudos, setListaLaudos] = useState<LaudoPericial[]>([]);
   const [activeTab, setActiveTab] = useState("home");
 
+  const BUCKET = "laudo-fotos";
+
+  // Gera signed URLs para fotos persistidas (bucket privado)
+  const hidratarFotos = async (l: LaudoPericial): Promise<LaudoPericial> => {
+    const fotos = await Promise.all(
+      (l.fotos ?? []).map(async (f) => {
+        if (f.path && !f.file) {
+          const { data } = await supabase.storage.from(BUCKET).createSignedUrl(f.path, 60 * 60 * 24 * 7);
+          return { ...f, preview: data?.signedUrl ?? f.preview ?? "" };
+        }
+        return f;
+      })
+    );
+    return { ...l, fotos };
+  };
+
   // Carrega laudos do usuário do Supabase
   useEffect(() => {
     if (!user) { setListaLaudos([]); return; }
@@ -56,12 +72,32 @@ export function LaudoProvider({ children }: { children: ReactNode }) {
         .eq("user_id", user.id)
         .order("updated_at", { ascending: false });
       if (error) { console.error("Erro carregando laudos:", error); return; }
-      const lista = (data ?? []).map((r: any) => r.payload as LaudoPericial).filter(Boolean);
+      const brutos = (data ?? []).map((r: any) => r.payload as LaudoPericial).filter(Boolean);
+      const lista = await Promise.all(brutos.map(hidratarFotos));
       setListaLaudos(lista);
     })();
   }, [user]);
 
-  // Mapeia laudo -> colunas estruturadas + payload jsonb
+  // Upload de fotos novas (com File) para o Storage; devolve fotos serializáveis
+  const uploadFotosNovas = async (l: LaudoPericial): Promise<LaudoPericial> => {
+    if (!user) return l;
+    const fotos = await Promise.all(
+      (l.fotos ?? []).map(async (f) => {
+        if (!f.file) return f;
+        const ext = (f.file.name.split(".").pop() || "jpg").toLowerCase();
+        const path = `${user.id}/${l.id}/${f.id}.${ext}`;
+        const { error } = await supabase.storage
+          .from(BUCKET)
+          .upload(path, f.file, { upsert: true, contentType: f.file.type });
+        if (error) { console.error("Erro upload foto:", error); return f; }
+        const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 24 * 7);
+        return { id: f.id, categoria: f.categoria, descricao: f.descricao, path, preview: data?.signedUrl ?? f.preview };
+      })
+    );
+    return { ...l, fotos };
+  };
+
+  // Mapeia laudo -> colunas estruturadas + payload jsonb (sem File)
   const toRow = (l: LaudoPericial) => ({
     id: l.id,
     user_id: user!.id,
@@ -79,14 +115,19 @@ export function LaudoProvider({ children }: { children: ReactNode }) {
     veiculo_chassi: l.dadosVeiculo.chassi,
     oficina_nome: l.dadosOficina.nome,
     oficina_cnpj: l.dadosOficina.cnpj,
-    payload: { ...l, fotos: [] }, // fotos com File não serializam — descartadas aqui
+    payload: {
+      ...l,
+      // remove File e preview (signed URL é regenerada na carga); mantém path
+      fotos: (l.fotos ?? []).map(({ file, preview, ...rest }) => rest),
+    },
   });
 
-  const persistLaudo = async (l: LaudoPericial) => {
-    if (!user) return;
-    const row = toRow(l);
-    const { error } = await supabase.from("laudos").upsert(row, { onConflict: "id" });
+  const persistLaudo = async (l: LaudoPericial): Promise<LaudoPericial> => {
+    if (!user) return l;
+    const comUploads = await uploadFotosNovas(l);
+    const { error } = await supabase.from("laudos").upsert(toRow(comUploads), { onConflict: "id" });
     if (error) console.error("Erro salvando laudo:", error);
+    return comUploads;
   };
 
   const updateLaudo = (updates: Partial<LaudoPericial>) =>
@@ -110,42 +151,33 @@ export function LaudoProvider({ children }: { children: ReactNode }) {
   const updateConclusao = (updates: Partial<LaudoPericial["conclusao"]>) =>
     setLaudo((prev) => ({ ...prev, conclusao: { ...prev.conclusao, ...updates } }));
 
-  const salvarLaudoAtual = () => {
-    persistLaudo(laudo);
+  const salvarLaudoAtual = async () => {
+    const salvo = await persistLaudo(laudo);
+    setLaudo(salvo);
     setListaLaudos((prev) => {
-      const index = prev.findIndex((l) => l.id === laudo.id);
-      if (index >= 0) {
-        const novaLista = [...prev];
-        novaLista[index] = laudo;
-        return novaLista;
-      }
-      return [laudo, ...prev];
+      const index = prev.findIndex((l) => l.id === salvo.id);
+      if (index >= 0) { const nova = [...prev]; nova[index] = salvo; return nova; }
+      return [salvo, ...prev];
     });
   };
 
-  const finalizarLaudoAtual = () => {
-    const laudoFinalizado: LaudoPericial = { ...laudo, status: 'finalizado' };
-    setLaudo(laudoFinalizado);
-    persistLaudo(laudoFinalizado);
+  const finalizarLaudoAtual = async () => {
+    const salvo = await persistLaudo({ ...laudo, status: 'finalizado' });
+    setLaudo(salvo);
     setListaLaudos((prev) => {
-      const index = prev.findIndex((l) => l.id === laudo.id);
-      if (index >= 0) {
-        const novaLista = [...prev];
-        novaLista[index] = laudoFinalizado;
-        return novaLista;
-      }
-      return [laudoFinalizado, ...prev];
+      const index = prev.findIndex((l) => l.id === salvo.id);
+      if (index >= 0) { const nova = [...prev]; nova[index] = salvo; return nova; }
+      return [salvo, ...prev];
     });
     setActiveTab("finalizadas");
   };
 
-  const finalizarLaudo = (id: string) => {
-    setListaLaudos((prev) => prev.map(l => l.id === id ? { ...l, status: 'finalizado' } : l));
-    if (laudo.id === id) {
-      setLaudo(prev => ({ ...prev, status: 'finalizado' }));
-    }
+  const finalizarLaudo = async (id: string) => {
     const alvo = listaLaudos.find(l => l.id === id);
-    if (alvo) persistLaudo({ ...alvo, status: 'finalizado' });
+    if (!alvo) return;
+    const salvo = await persistLaudo({ ...alvo, status: 'finalizado' });
+    setListaLaudos((prev) => prev.map(l => l.id === id ? salvo : l));
+    if (laudo.id === id) setLaudo(salvo);
   };
 
   const carregarLaudo = (id: string) => {

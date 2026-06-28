@@ -262,17 +262,24 @@ create trigger laudos_set_updated_at before update on public.laudos
   for each row execute function public.set_updated_at();
 
 -- =========================================================
--- STORAGE: bucket de fotos (rode depois de criar via UI ou:)
+-- STORAGE: bucket de fotos (privado, com RLS por usuário)
 -- =========================================================
--- insert into storage.buckets (id, name, public) values ('laudo-fotos','laudo-fotos', false)
---   on conflict (id) do nothing;
---
--- create policy "fotos storage select own" on storage.objects for select to authenticated
---   using (bucket_id = 'laudo-fotos' and (storage.foldername(name))[1] = auth.uid()::text);
--- create policy "fotos storage insert own" on storage.objects for insert to authenticated
---   with check (bucket_id = 'laudo-fotos' and (storage.foldername(name))[1] = auth.uid()::text);
--- create policy "fotos storage delete own" on storage.objects for delete to authenticated
---   using (bucket_id = 'laudo-fotos' and (storage.foldername(name))[1] = auth.uid()::text);
+insert into storage.buckets (id, name, public)
+values ('laudo-fotos','laudo-fotos', false)
+on conflict (id) do nothing;
+
+drop policy if exists "fotos storage select own" on storage.objects;
+create policy "fotos storage select own" on storage.objects for select to authenticated
+  using (bucket_id = 'laudo-fotos' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "fotos storage insert own" on storage.objects;
+create policy "fotos storage insert own" on storage.objects for insert to authenticated
+  with check (bucket_id = 'laudo-fotos' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "fotos storage update own" on storage.objects;
+create policy "fotos storage update own" on storage.objects for update to authenticated
+  using (bucket_id = 'laudo-fotos' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "fotos storage delete own" on storage.objects;
+create policy "fotos storage delete own" on storage.objects for delete to authenticated
+  using (bucket_id = 'laudo-fotos' and (storage.foldername(name))[1] = auth.uid()::text);
 
 -- =========================================================
 -- PROFILES (dados de perfil do usuário)

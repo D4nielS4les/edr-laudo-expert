@@ -36,8 +36,9 @@ export interface DadosOficina {
 
 export interface FotoVistoria {
   id: string;
-  file: File;
+  file?: File;
   preview: string;
+  path?: string;
   categoria: 'geral' | 'placa_chassi' | 'hodometro' | 'defeito';
   descricao: string;
 }
