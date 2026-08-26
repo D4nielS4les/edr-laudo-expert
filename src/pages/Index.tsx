@@ -18,6 +18,8 @@ import { useLaudo } from "@/contexts/LaudoContext";
 import { generateLaudoPDF } from "@/utils/generateLaudoPDF";
 import { useRef } from "react";
 import { extractTextFromPDF, parseOSData } from "@/utils/pdfParser";
+import { parseOrcamentoXML } from "@/utils/xmlParser";
+
 
 const mainTabs = [
   { value: "home", label: "Início", icon: Home },
@@ -37,6 +39,7 @@ function LaudoApp() {
   const { laudo, activeTab, setActiveTab, salvarLaudoAtual, novoLaudo, updateLaudo } = useLaudo();
   const inVistoria = vistoriaTabs.some(t => t.value === activeTab);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const xmlInputRef = useRef<HTMLInputElement>(null);
 
   const handleImportPDF = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -66,6 +69,40 @@ function LaudoApp() {
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+
+  const handleImportXML = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    toast({ title: "Processando XML...", description: "Extraindo informações do orçamento." });
+    try {
+      const data = parseOrcamentoXML(await file.text());
+      updateLaudo({
+        ordemServico: data.ordemServico || laudo.ordemServico,
+        dadosCliente: { ...laudo.dadosCliente, ...data.dadosCliente },
+        dadosVeiculo: { ...laudo.dadosVeiculo, ...data.dadosVeiculo },
+        dadosOS: { ...laudo.dadosOS, ...data.dadosOS },
+        analise: {
+          ...laudo.analise,
+          itensOrcamento: data.itens,
+          gruposAnalise: [],
+          ordemItens: data.itens.map(i => i.id),
+          historicoManutencao: data.relatos.relatoOficina || laudo.analise.historicoManutencao,
+          relatoMotorista: data.relatos.relatoMotorista || laudo.analise.relatoMotorista,
+        },
+      });
+      const pecas = data.itens.filter(i => i.tipo === 'peca').length;
+      toast({
+        title: "Importação XML Concluída!",
+        description: `${data.itens.length} itens (${pecas} peças / ${data.itens.length - pecas} M.O.) carregados.`,
+      });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Erro na Importação", description: err instanceof Error ? err.message : "Não foi possível ler este XML.", variant: "destructive" });
+    } finally {
+      if (xmlInputRef.current) xmlInputRef.current.value = "";
+    }
+  };
+
 
   const handleExportPDF = async () => {
     toast({ title: "Gerando PDF...", description: "O laudo está sendo compilado para exportação." });
@@ -125,9 +162,14 @@ function LaudoApp() {
               </TabsList>
               <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                 <input type="file" ref={fileInputRef} className="hidden" accept="application/pdf" onChange={handleImportPDF} />
+                <input type="file" ref={xmlInputRef} className="hidden" accept=".xml,text/xml,application/xml" onChange={handleImportXML} />
                 <Button onClick={() => fileInputRef.current?.click()} className="flex-1 sm:flex-none gap-2 bg-accent hover:bg-accent/90 text-accent-foreground">
                   <FileUp className="h-4 w-4" /> Importar PDF
                 </Button>
+                <Button onClick={() => xmlInputRef.current?.click()} variant="outline" className="flex-1 sm:flex-none gap-2 border-accent text-accent hover:bg-accent/5">
+                  <FileUp className="h-4 w-4" /> Importar XML
+                </Button>
+
                 <Button onClick={handleSave} variant="outline" className="flex-1 sm:flex-none gap-2 border-accent text-accent hover:bg-accent/5">
                   <Save className="h-4 w-4" /> Salvar
                 </Button>

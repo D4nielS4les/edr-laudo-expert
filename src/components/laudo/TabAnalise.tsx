@@ -10,6 +10,8 @@ import type { ItemOrcamento, GrupoAnalise, FotoItem } from "@/types/laudo";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { isPeca, tipoItem } from "@/utils/itemTipo";
+
 import {
   DndContext,
   DragEndEvent,
@@ -351,12 +353,17 @@ function ItemCard({ idx, item, open, onToggle, onUpdate, onRemove }: ItemCardPro
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
 
+  const peca = isPeca(item);
+
   return (
     <div ref={setNodeRef} style={style}>
     <Collapsible
       open={open}
       onOpenChange={onToggle}
-      className="border border-border rounded-lg overflow-hidden bg-card"
+      className={cn(
+        "border rounded-lg overflow-hidden bg-card border-l-4",
+        peca ? "border-border border-l-primary" : "border-border border-l-accent"
+      )}
     >
       <div className="flex items-center justify-between p-4 bg-muted/30 hover:bg-muted/50 transition-colors">
         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -372,10 +379,17 @@ function ItemCard({ idx, item, open, onToggle, onUpdate, onRemove }: ItemCardPro
             <button className="flex flex-1 items-center gap-3 text-left min-w-0">
               {open ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 min-w-0">
-                <span className="text-sm font-bold text-primary shrink-0">Item {idx + 1}</span>
+                <span className={cn("text-sm font-bold shrink-0", peca ? "text-primary" : "text-accent")}>Item {idx + 1}</span>
+                <span className={cn(
+                  "text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full shrink-0",
+                  peca ? "bg-primary/10 text-primary" : "bg-accent/10 text-accent"
+                )}>
+                  {peca ? "Peça" : "M.O."}
+                </span>
                 <span className="text-sm font-medium truncate max-w-[200px] sm:max-w-md">
                   {item.descricao || "Sem descrição"}
                 </span>
+
                 <span className={cn(
                   "text-xs font-semibold px-2 py-0.5 rounded border transition-colors shrink-0",
                   item.status === 'reprovado'
@@ -556,10 +570,21 @@ function SubItem({ item, onUpdate, onRemover }: { item: ItemOrcamento; onUpdate:
 function ItemFields({ item, onUpdate, hideStatus }: { item: ItemOrcamento; onUpdate: (u: Partial<ItemOrcamento>) => void; hideStatus?: boolean }) {
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <div><Label className="text-xs">Código</Label><Input value={item.codigo} onChange={e => onUpdate({ codigo: e.target.value })} placeholder="88331579" /></div>
         <div className="md:col-span-2"><Label className="text-xs">Descrição</Label><Input value={item.descricao} onChange={e => onUpdate({ descricao: e.target.value })} placeholder="Rolamento Sem Fim - Substituir" /></div>
+        <div>
+          <Label className="text-xs">Tipo</Label>
+          <Select value={tipoItem(item)} onValueChange={v => onUpdate({ tipo: v as NonNullable<ItemOrcamento["tipo"]> })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="peca">Peça</SelectItem>
+              <SelectItem value="mao_obra">Mão de Obra</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div><Label className="text-xs">Qtd Peça</Label><Input type="number" value={item.qtdPeca} onChange={e => onUpdate({ qtdPeca: +e.target.value })} /></div>
         <div><Label className="text-xs">Valor Peça (R$)</Label><Input type="number" step="0.01" value={item.valorPeca} onChange={e => onUpdate({ valorPeca: +e.target.value })} /></div>
