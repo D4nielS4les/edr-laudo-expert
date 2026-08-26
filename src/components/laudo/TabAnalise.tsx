@@ -10,6 +10,8 @@ import type { ItemOrcamento, GrupoAnalise, FotoItem } from "@/types/laudo";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { isPeca, tipoItem } from "@/utils/itemTipo";
+
 import {
   DndContext,
   DragEndEvent,
