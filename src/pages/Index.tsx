@@ -18,6 +18,8 @@ import { useLaudo } from "@/contexts/LaudoContext";
 import { generateLaudoPDF } from "@/utils/generateLaudoPDF";
 import { useRef } from "react";
 import { extractTextFromPDF, parseOSData } from "@/utils/pdfParser";
+import { parseOrcamentoXML } from "@/utils/xmlParser";
+
 
 const mainTabs = [
   { value: "home", label: "Início", icon: Home },
