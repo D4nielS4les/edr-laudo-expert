@@ -37,6 +37,7 @@ function LaudoApp() {
   const { laudo, activeTab, setActiveTab, salvarLaudoAtual, novoLaudo, updateLaudo } = useLaudo();
   const inVistoria = vistoriaTabs.some(t => t.value === activeTab);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const xmlInputRef = useRef<HTMLInputElement>(null);
 
   const handleImportPDF = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -66,6 +67,40 @@ function LaudoApp() {
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+
+  const handleImportXML = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    toast({ title: "Processando XML...", description: "Extraindo informações do orçamento." });
+    try {
+      const data = parseOrcamentoXML(await file.text());
+      updateLaudo({
+        ordemServico: data.ordemServico || laudo.ordemServico,
+        dadosCliente: { ...laudo.dadosCliente, ...data.dadosCliente },
+        dadosVeiculo: { ...laudo.dadosVeiculo, ...data.dadosVeiculo },
+        dadosOS: { ...laudo.dadosOS, ...data.dadosOS },
+        analise: {
+          ...laudo.analise,
+          itensOrcamento: data.itens,
+          gruposAnalise: [],
+          ordemItens: data.itens.map(i => i.id),
+          historicoManutencao: data.relatos.relatoOficina || laudo.analise.historicoManutencao,
+          relatoMotorista: data.relatos.relatoMotorista || laudo.analise.relatoMotorista,
+        },
+      });
+      const pecas = data.itens.filter(i => i.tipo === 'peca').length;
+      toast({
+        title: "Importação XML Concluída!",
+        description: `${data.itens.length} itens (${pecas} peças / ${data.itens.length - pecas} M.O.) carregados.`,
+      });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Erro na Importação", description: err instanceof Error ? err.message : "Não foi possível ler este XML.", variant: "destructive" });
+    } finally {
+      if (xmlInputRef.current) xmlInputRef.current.value = "";
+    }
+  };
+
 
   const handleExportPDF = async () => {
     toast({ title: "Gerando PDF...", description: "O laudo está sendo compilado para exportação." });
