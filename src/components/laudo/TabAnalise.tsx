@@ -568,10 +568,21 @@ function SubItem({ item, onUpdate, onRemover }: { item: ItemOrcamento; onUpdate:
 function ItemFields({ item, onUpdate, hideStatus }: { item: ItemOrcamento; onUpdate: (u: Partial<ItemOrcamento>) => void; hideStatus?: boolean }) {
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <div><Label className="text-xs">Código</Label><Input value={item.codigo} onChange={e => onUpdate({ codigo: e.target.value })} placeholder="88331579" /></div>
         <div className="md:col-span-2"><Label className="text-xs">Descrição</Label><Input value={item.descricao} onChange={e => onUpdate({ descricao: e.target.value })} placeholder="Rolamento Sem Fim - Substituir" /></div>
+        <div>
+          <Label className="text-xs">Tipo</Label>
+          <Select value={tipoItem(item)} onValueChange={v => onUpdate({ tipo: v as NonNullable<ItemOrcamento["tipo"]> })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="peca">Peça</SelectItem>
+              <SelectItem value="mao_obra">Mão de Obra</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div><Label className="text-xs">Qtd Peça</Label><Input type="number" value={item.qtdPeca} onChange={e => onUpdate({ qtdPeca: +e.target.value })} /></div>
         <div><Label className="text-xs">Valor Peça (R$)</Label><Input type="number" step="0.01" value={item.valorPeca} onChange={e => onUpdate({ valorPeca: +e.target.value })} /></div>
