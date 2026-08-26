@@ -121,6 +121,7 @@ function parseItens(root: Element, vh: ValoresHora): ItemOrcamento[] {
     const hPin = numOf(n, "hora_pintura");
     const horas = hRI + hRep + hPin;
 
+    // Um mesmo item pode ter peça (troca) E mão de obra (horas) simultaneamente.
     let valorPeca = 0;
     let qtdPeca = 0;
     let valorMaoObra = 0;
@@ -131,13 +132,15 @@ function parseItens(root: Element, vh: ValoresHora): ItemOrcamento[] {
       qtdPeca = quantidade;
       valorPeca = precoLiquido;
       acoes.push("Troca");
-    } else if (horas > 0) {
+    }
+
+    if (horas > 0) {
       qtdMaoObra = horas;
       valorMaoObra = hRI * vh.removInst + hRep * vh.reparacao + hPin * vh.pintura;
       if (hRI > 0) acoes.push("Rem-Inst");
       if (hRep > 0) acoes.push("Reparação");
       if (hPin > 0) acoes.push("Pintura");
-    } else {
+    } else if (!troca) {
       // Serviço avulso (inclusão manual) — apenas preço
       qtdMaoObra = quantidade;
       valorMaoObra = precoLiquido * quantidade;
@@ -156,7 +159,7 @@ function parseItens(root: Element, vh: ValoresHora): ItemOrcamento[] {
       valorPeca,
       qtdMaoObra,
       valorMaoObra,
-      valorTotal: valorPeca * qtdPeca + valorMaoObra,
+      valorTotal: valorPeca + valorMaoObra,
       impostos: { ipi: 0, icms: 0 },
       justificativa: "",
       status: 'pendente',
