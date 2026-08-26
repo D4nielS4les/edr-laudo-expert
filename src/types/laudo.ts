@@ -56,6 +56,8 @@ export interface ItemOrcamento {
   descricao: string;
   acao: string;
   statusItem: string;
+  tipo?: 'peca' | 'mao_obra';
+
   qtdPeca: number;
   valorPeca: number;
   qtdMaoObra: number;
