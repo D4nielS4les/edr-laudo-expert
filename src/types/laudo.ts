@@ -79,14 +79,22 @@ export interface GrupoAnalise {
   fotos?: FotoItem[];
 }
 
+export interface TotaisOrcamento {
+  valorPecas: number;
+  valorMaoObra: number;
+  valorTotal: number;
+}
+
 export interface DadosAnalise {
   itensOrcamento: ItemOrcamento[];
   gruposAnalise?: GrupoAnalise[];
   ordemItens?: string[]; // ordem dos blocos: pode conter ids de itens (avulsos) e ids de grupos prefixados com "grupo:"
+  totaisOrcamento?: TotaisOrcamento; // totais oficiais do orçamento importado (XML)
   causaRaiz: string;
   historicoManutencao: string;
   relatoMotorista: string;
 }
+
 
 export interface DadosConclusao {
   parecerTecnico: string;

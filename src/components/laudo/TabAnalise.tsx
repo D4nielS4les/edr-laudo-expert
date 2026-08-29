@@ -203,9 +203,12 @@ export function TabAnalise() {
   };
 
   // ----- totais -----
-  const subtotalPecas = itensOrcamento.reduce((s, i) => s + i.valorPeca, 0);
+  const subtotalPecas = itensOrcamento.reduce((s, i) => s + (isPeca(i) ? i.valorPeca : 0), 0);
   const subtotalMaoObra = itensOrcamento.reduce((s, i) => s + i.valorMaoObra, 0);
-  const totalGeral = itensOrcamento.reduce((s, i) => s + i.valorTotal, 0);
+  const totalGeral = subtotalPecas + subtotalMaoObra;
+  const totaisXML = laudo.analise.totaisOrcamento;
+  const divergente = !!totaisXML && Math.abs(totalGeral - totaisXML.valorTotal) > 0.05;
+
 
   const aprovarTodos = () => {
     updateAnalise({
@@ -318,6 +321,23 @@ export function TabAnalise() {
               </div>
             </div>
           )}
+
+          {totaisXML && (
+            <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm space-y-1">
+              <p className="font-semibold text-foreground">Totais do orçamento importado (XML)</p>
+              <div className="flex flex-wrap gap-6 text-muted-foreground">
+                <span>Peças: <strong className="text-foreground">{fmtBRL(totaisXML.valorPecas)}</strong></span>
+                <span>Mão de obra: <strong className="text-foreground">{fmtBRL(totaisXML.valorMaoObra)}</strong></span>
+                <span>Total: <strong className="text-foreground">{fmtBRL(totaisXML.valorTotal)}</strong></span>
+              </div>
+              {divergente && (
+                <p className="text-destructive text-xs">
+                  Divergência de {fmtBRL(Math.abs(totalGeral - totaisXML.valorTotal))} entre o calculado e o total oficial do XML.
+                </p>
+              )}
+            </div>
+          )}
+
         </CardContent>
       </Card>
 
