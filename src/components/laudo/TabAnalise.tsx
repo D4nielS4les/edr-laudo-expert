@@ -206,7 +206,7 @@ export function TabAnalise() {
   const subtotalPecas = itensOrcamento.reduce((s, i) => s + (isPeca(i) ? i.valorPeca : 0), 0);
   const subtotalMaoObra = itensOrcamento.reduce((s, i) => s + i.valorMaoObra, 0);
   const totalGeral = subtotalPecas + subtotalMaoObra;
-  const totaisXML = analise.totaisOrcamento;
+  const totaisXML = laudo.analise.totaisOrcamento;
   const divergente = !!totaisXML && Math.abs(totalGeral - totaisXML.valorTotal) > 0.05;
 
 
