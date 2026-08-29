@@ -413,7 +413,9 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
       }
 
       try {
-        const imgData = foto.preview;
+        const imgData = img(foto.id, foto.preview);
+        if (!imgData) throw new Error("sem imagem");
+
         const catLabel = categorias[foto.categoria] || foto.categoria;
 
         doc.setFontSize(8);
