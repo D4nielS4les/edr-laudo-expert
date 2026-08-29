@@ -620,7 +620,7 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
       y = 28;
       y = sectionTitle(doc, "Itens Reprovados", y);
 
-      const renderBlock = (titulo: string, descricao: string, fotos: { dataUrl: string; descricao?: string }[] | undefined, justificativa: string) => {
+      const renderBlock = (titulo: string, descricao: string, fotos: { id: string; dataUrl: string; descricao?: string }[] | undefined, justificativa: string) => {
         if (y > PAGE_H - 50) { pageNum = newPage(doc, pageNum); y = 28; }
         doc.setFontSize(10);
         doc.setFont("Roboto", "bold");
