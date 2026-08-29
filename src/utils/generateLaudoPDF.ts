@@ -186,6 +186,14 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
   // glyph spacing corruption (Helvetica is referenced by name, not embedded).
   await registerRoboto(doc);
 
+  // Pré-carrega todas as fotos como Data URL (jsPDF não aceita blob:/URL remota)
+  const photoCache = await buildPhotoCache(laudo);
+  const img = (id: string, raw?: string): string =>
+    photoCache.get(id) ?? (raw ? photoCache.get(raw) ?? (raw.startsWith("data:") ? raw : "") : "");
+  const valorMOItem = (i: ItemOrcamento) => i.valorMaoObra;
+  const valorPecaItem = (i: ItemOrcamento) => (isPeca(i) ? i.valorPeca * i.qtdPeca : 0);
+
+
   // Load logo
   let logoBase64: string | null = null;
   try {
