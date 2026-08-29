@@ -321,6 +321,23 @@ export function TabAnalise() {
               </div>
             </div>
           )}
+
+          {totaisXML && (
+            <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm space-y-1">
+              <p className="font-semibold text-foreground">Totais do orçamento importado (XML)</p>
+              <div className="flex flex-wrap gap-6 text-muted-foreground">
+                <span>Peças: <strong className="text-foreground">{fmtBRL(totaisXML.valorPecas)}</strong></span>
+                <span>Mão de obra: <strong className="text-foreground">{fmtBRL(totaisXML.valorMaoObra)}</strong></span>
+                <span>Total: <strong className="text-foreground">{fmtBRL(totaisXML.valorTotal)}</strong></span>
+              </div>
+              {divergente && (
+                <p className="text-destructive text-xs">
+                  Divergência de {fmtBRL(Math.abs(totalGeral - totaisXML.valorTotal))} entre o calculado e o total oficial do XML.
+                </p>
+              )}
+            </div>
+          )}
+
         </CardContent>
       </Card>
 
