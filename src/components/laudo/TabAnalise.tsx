@@ -203,9 +203,12 @@ export function TabAnalise() {
   };
 
   // ----- totais -----
-  const subtotalPecas = itensOrcamento.reduce((s, i) => s + i.valorPeca, 0);
+  const subtotalPecas = itensOrcamento.reduce((s, i) => s + (isPeca(i) ? i.valorPeca : 0), 0);
   const subtotalMaoObra = itensOrcamento.reduce((s, i) => s + i.valorMaoObra, 0);
-  const totalGeral = itensOrcamento.reduce((s, i) => s + i.valorTotal, 0);
+  const totalGeral = subtotalPecas + subtotalMaoObra;
+  const totaisXML = analise.totaisOrcamento;
+  const divergente = !!totaisXML && Math.abs(totalGeral - totaisXML.valorTotal) > 0.05;
+
 
   const aprovarTodos = () => {
     updateAnalise({
