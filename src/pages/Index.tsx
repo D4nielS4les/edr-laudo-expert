@@ -86,9 +86,15 @@ function LaudoApp() {
           itensOrcamento: data.itens,
           gruposAnalise: [],
           ordemItens: data.itens.map(i => i.id),
+          totaisOrcamento: {
+            valorPecas: data.totais.valorLiquidoPecas,
+            valorMaoObra: data.totais.valorLiquidoMaoObra,
+            valorTotal: data.totais.valorTotalLiquidoGeral,
+          },
           historicoManutencao: data.relatos.relatoOficina || laudo.analise.historicoManutencao,
           relatoMotorista: data.relatos.relatoMotorista || laudo.analise.relatoMotorista,
         },
+
       });
       const pecas = data.itens.filter(i => i.tipo === 'peca').length;
       toast({
