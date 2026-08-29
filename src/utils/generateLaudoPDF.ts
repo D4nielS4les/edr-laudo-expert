@@ -1,6 +1,9 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import type { LaudoPericial } from "@/types/laudo";
+import type { LaudoPericial, ItemOrcamento } from "@/types/laudo";
+import { isPeca } from "@/utils/itemTipo";
+import { supabase } from "@/integrations/supabase/client";
+
 import edrLogoUrl from "@/assets/edr-logo.png";
 import robotoRegularUrl from "@/assets/fonts/Roboto-Regular.ttf?url";
 import robotoBoldUrl from "@/assets/fonts/Roboto-Bold.ttf?url";
