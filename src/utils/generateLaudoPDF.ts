@@ -581,7 +581,7 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
             if (x + imgW > MARGIN + CONTENT_W) { x = MARGIN; y += imgH + 8; }
             if (y + imgH > PAGE_H - 25) { pageNum = newPage(doc, pageNum); y = 28; x = MARGIN; }
             try {
-              doc.addImage(foto.dataUrl, "JPEG", x, y, imgW, imgH);
+              doc.addImage(img(foto.id, foto.dataUrl), "JPEG", x, y, imgW, imgH);
               if (foto.descricao) {
                 doc.setFontSize(7);
                 doc.setTextColor(...GRAY);
@@ -642,7 +642,7 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
             if (x + imgW > MARGIN + CONTENT_W) { x = MARGIN; y += imgH + 8; }
             if (y + imgH > PAGE_H - 25) { pageNum = newPage(doc, pageNum); y = 28; x = MARGIN; }
             try {
-              doc.addImage(foto.dataUrl, "JPEG", x, y, imgW, imgH);
+              doc.addImage(img(foto.id, foto.dataUrl), "JPEG", x, y, imgW, imgH);
               if (foto.descricao) {
                 doc.setFontSize(7);
                 doc.setTextColor(...GRAY);
