@@ -20,23 +20,32 @@ export function TabFotos() {
   const [categoria, setCategoria] = useState<FotoVistoria["categoria"]>("geral");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleFiles = (files: FileList | null) => {
+  const fileToDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+
+  const handleFiles = async (files: FileList | null) => {
     if (!files) return;
-    const novasFotos: FotoVistoria[] = Array.from(files).map((file) => ({
-      id: crypto.randomUUID(),
-      file,
-      preview: URL.createObjectURL(file),
-      categoria,
-      descricao: "",
-    }));
+    const novasFotos: FotoVistoria[] = await Promise.all(
+      Array.from(files).map(async (file) => ({
+        id: crypto.randomUUID(),
+        file,
+        preview: await fileToDataUrl(file),
+        categoria,
+        descricao: "",
+      }))
+    );
     updateLaudo({ fotos: [...laudo.fotos, ...novasFotos] });
   };
 
   const removerFoto = (id: string) => {
-    const foto = laudo.fotos.find(f => f.id === id);
-    if (foto) URL.revokeObjectURL(foto.preview);
     updateLaudo({ fotos: laudo.fotos.filter(f => f.id !== id) });
   };
+
 
   const atualizarDescricao = (id: string, descricao: string) => {
     updateLaudo({ fotos: laudo.fotos.map(f => f.id === id ? { ...f, descricao } : f) });
