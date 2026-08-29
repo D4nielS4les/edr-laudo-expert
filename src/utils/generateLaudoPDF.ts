@@ -83,15 +83,69 @@ function formatCurrency(val: number): string {
   return val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-async function loadLogoBase64(): Promise<string> {
-  const res = await fetch(edrLogoUrl);
-  const blob = await res.blob();
-  return new Promise((resolve) => {
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(blob);
   });
 }
+
+async function loadImageBase64(url: string): Promise<string> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Falha ao carregar imagem (${res.status})`);
+  const blob = await res.blob();
+  if (blob.type && !blob.type.startsWith("image/")) throw new Error("Conteúdo não é uma imagem");
+  return blobToDataUrl(blob);
+}
+
+async function loadStoredPhoto(path: string): Promise<string> {
+  const { data, error } = await supabase.storage.from("laudo-fotos").download(path);
+  if (error || !data) throw error ?? new Error("Foto não encontrada no armazenamento");
+  return blobToDataUrl(data);
+}
+
+/** Pré-carrega todas as fotos (vistoria, itens e grupos) como Data URL. */
+async function buildPhotoCache(laudo: LaudoPericial): Promise<Map<string, string>> {
+  const cache = new Map<string, string>();
+
+  await Promise.all(
+    (laudo.fotos ?? []).map(async (foto) => {
+      try {
+        if (foto.file) cache.set(foto.id, await blobToDataUrl(foto.file));
+        else if (foto.path) cache.set(foto.id, await loadStoredPhoto(foto.path));
+        else if (foto.preview?.startsWith("data:")) cache.set(foto.id, foto.preview);
+        else if (foto.preview) cache.set(foto.id, await loadImageBase64(foto.preview));
+      } catch (e) {
+        console.warn("Foto de vistoria não pôde ser carregada para o PDF", e);
+      }
+    })
+  );
+
+  const extras = [
+    ...laudo.analise.itensOrcamento.flatMap(i => i.fotos ?? []),
+    ...(laudo.analise.gruposAnalise ?? []).flatMap(g => g.fotos ?? []),
+  ];
+  await Promise.all(
+    extras.map(async (foto) => {
+      const raw = foto.dataUrl;
+      if (!raw) return;
+      try {
+        cache.set(foto.id, raw.startsWith("data:") ? raw : await loadImageBase64(raw));
+      } catch (e) {
+        console.warn("Foto de item/grupo não pôde ser carregada para o PDF", e);
+      }
+    })
+  );
+
+  return cache;
+}
+
+async function loadLogoBase64(): Promise<string> {
+  return loadImageBase64(edrLogoUrl);
+}
+
 
 async function fetchFontBase64(url: string): Promise<string> {
   const res = await fetch(url);
