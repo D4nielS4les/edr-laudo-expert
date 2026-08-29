@@ -469,8 +469,9 @@ export async function generateLaudoPDF(laudo: LaudoPericial) {
     y = (doc as any).lastAutoTable.finalY + 6;
 
     // Totals
-    const subtotalPecas = laudo.analise.itensOrcamento.reduce((s, i) => s + i.qtdPeca * i.valorPeca, 0);
-    const subtotalMO = laudo.analise.itensOrcamento.reduce((s, i) => s + i.qtdMaoObra * i.valorMaoObra, 0);
+    const subtotalPecas = laudo.analise.itensOrcamento.reduce((s, i) => s + valorPecaItem(i), 0);
+    const subtotalMO = laudo.analise.itensOrcamento.reduce((s, i) => s + valorMOItem(i), 0);
+
     const total = subtotalPecas + subtotalMO;
 
     doc.setFontSize(9);
